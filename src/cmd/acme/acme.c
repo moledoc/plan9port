@@ -1048,11 +1048,21 @@ iconinit(void)
 		tagcols[HTEXT] = display->black;
 
 		/* Yellow */
+		/* NOTE: original
 		textcols[BACK] = allocimagemix(display, DPaleyellow, DWhite);
 		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
 		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 		textcols[TEXT] = display->black;
 		textcols[HTEXT] = display->black;
+		*/
+
+		/* White */
+		textcols[BACK] = allocimagemix(display, DWhite, DWhite);
+		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
+		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlack);
+		textcols[TEXT] = display->black;
+		textcols[HTEXT] = display->black;
+
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);
