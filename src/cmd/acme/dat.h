@@ -171,6 +171,16 @@ enum	/* Text.what */
 	Body
 };
 
+enum	/* Text.extension */
+{
+	EXT_NONE,
+	EXT_C,
+	EXT_GO,
+	EXT_PYTHON,
+	EXT_JAVA,
+	EXT_COUNT
+};
+
 struct Text
 {
 	File		*file;
@@ -180,6 +190,7 @@ struct Text
 	uint	q0;
 	uint	q1;
 	int	what;
+	int	extension;
 	int	tabstop;
 	Window	*w;
 	Rectangle scrollr;
