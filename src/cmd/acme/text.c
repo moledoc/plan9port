@@ -119,7 +119,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 			offset++; ptr++;
 		} else if (*ptr == '(' || *ptr == ')' || 
 					*ptr == '[' || *ptr == ']' || 
-					*ptr == '{' || *ptr == '}') {
+					*ptr == '{' || *ptr == '}' || 
+					*ptr == '<' || *ptr == '>') {
 			buf[0] = *ptr;
 			memcpy(offset_buf, (char *)b->ptr, offset);
 			int bufwid = stringnwidth(f->font, offset_buf, offset);
