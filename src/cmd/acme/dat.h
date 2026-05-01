@@ -181,6 +181,18 @@ enum	/* Text.extension */
 	EXT_COUNT
 };
 
+
+enum { /* syntax_highlighting tokens */
+	SYHL_CODETAG,
+	SYHL_KEYWORD,
+	SYHL_NUMBER,
+	SYHL_QUOTE,
+	SYHL_COMMENT,
+	SYHL_ESCAPE,
+	SYHL_PAREN,
+	SYHL_NCOL
+};
+
 struct Text
 {
 	File		*file;
@@ -560,6 +572,7 @@ extern char			*acmeshell;
 extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
+extern Image		*syhlcols[SYHL_NCOL];
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;

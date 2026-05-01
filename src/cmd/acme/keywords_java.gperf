@@ -2,177 +2,174 @@
 #include <string.h>
 %}
 
-# generate c code with gperf:
-# gperf -C -E -t -L C -N in_word_set_java keywords_java.gperf > keywords_java_hash.c
-
 struct keyword_java { const char *name; };
 
 %%
 # {
-abstract, 1
-assert, 1
-boolean, 1
-break, 1
-byte, 1
-case, 1
-catch, 1
-char, 1
-class, 1
-const, 1
-continue, 1
-default, 1
-do, 1
-double, 1
-else, 1
-enum, 1
-extends, 1
-final, 1
-finally, 1
-float, 1
-for, 1
-goto, 1
-if, 1
-implements, 1
-import, 1
-instanceof, 1
-int, 1
-interface, 1
-long, 1
-native, 1
-new, 1
-package, 1
-private, 1
-protected, 1
-public, 1
-return, 1
-short, 1
-static, 1
-strictfp, 1
-super, 1
-switch, 1
-synchronized, 1
-this, 1
-throw, 1
-throws, 1
-transient, 1
-try, 1
-void, 1
-volatile, 1
-while, 1
+abstract
+assert
+boolean
+break
+byte
+case
+catch
+char
+class
+const
+continue
+default
+do
+double
+else
+enum
+extends
+final
+finally
+float
+for
+goto
+if
+implements
+import
+instanceof
+int
+interface
+long
+native
+new
+package
+private
+protected
+public
+return
+short
+static
+strictfp
+super
+switch
+synchronized
+this
+throw
+throws
+transient
+try
+void
+volatile
+while
 #
-Integer, 1
-Long, 1
-Double, 1
-Float, 1
-Boolean, 1
-Byte, 1
-Short, 1
-Character, 1
-String, 1
-Object, 1
-Class, 1
-System, 1
-Thread, 1
-Exception, 1
-RuntimeException, 1
-Throwable, 1
+Integer
+Long
+Double
+Float
+Boolean
+Byte
+Short
+Character
+String
+Object
+Class
+System
+Thread
+Exception
+RuntimeException
+Throwable
 #
-main, 1
-toString, 1
-equals, 1
-hashCode, 1
-compareTo, 1
-length, 1
-size, 1
-add, 1
-remove, 1
-get, 1
-set, 1
-contains, 1
-isEmpty, 1
-iterator, 1
-next, 1
-hasNext, 1
-println, 1
-print, 1
-printf, 1
-readLine, 1
-wait, 1
-notify, 1
-notifyAll, 1
-run, 1
-start, 1
-sleep, 1
-join, 1
+main
+toString
+equals
+hashCode
+compareTo
+length
+size
+add
+remove
+get
+set
+contains
+isEmpty
+iterator
+next
+hasNext
+println
+print
+printf
+readLine
+wait
+notify
+notifyAll
+run
+start
+sleep
+join
 #
-null, 1
-true, 1
-false, 1
+null
+true
+false
 #
-System.out, 1
-System.err, 1
-System.in, 1
-System.exit, 1
-System.gc, 1
-System.currentTimeMillis, 1
-System.nanoTime, 1
+System.out
+System.err
+System.in
+System.exit
+System.gc
+System.currentTimeMillis
+System.nanoTime
 #
-Math.abs, 1
-Math.max, 1
-Math.min, 1
-Math.sqrt, 1
-Math.pow, 1
-Math.random, 1
-Math.sin, 1
-Math.cos, 1
-Math.tan, 1
-Math.log, 1
-Math.exp, 1
-Math.floor, 1
-Math.ceil, 1
-Math.round, 1
+Math.abs
+Math.max
+Math.min
+Math.sqrt
+Math.pow
+Math.random
+Math.sin
+Math.cos
+Math.tan
+Math.log
+Math.exp
+Math.floor
+Math.ceil
+Math.round
 #
-StringBuilder, 1
-StringBuffer, 1
-Arrays, 1
-Collections, 1
-List, 1
-Map, 1
-Set, 1
-Queue, 1
-Deque, 1
-HashMap, 1
-HashSet, 1
-ArrayList, 1
-LinkedList, 1
-TreeMap, 1
-TreeSet, 1
+StringBuilder
+StringBuffer
+Arrays
+Collections
+List
+Map
+Set
+Queue
+Deque
+HashMap
+HashSet
+ArrayList
+LinkedList
+TreeMap
+TreeSet
 #
-IOException, 1
-File, 1
-FileReader, 1
-FileWriter, 1
-BufferedReader, 1
-BufferedWriter, 1
-InputStream, 1
-OutputStream, 1
-FileInputStream, 1
-FileOutputStream, 1
-Scanner, 1
+IOException
+File
+FileReader
+FileWriter
+BufferedReader
+BufferedWriter
+InputStream
+OutputStream
+FileInputStream
+FileOutputStream
+Scanner
 #
-Runnable, 1
-Callable, 1
-Future, 1
-Executor, 1
-ExecutorService, 1
-ThreadPoolExecutor, 1
+Runnable
+Callable
+Future
+Executor
+ExecutorService
+ThreadPoolExecutor
 #
-Optional, 1
-Stream, 1
-Collectors, 1
-Predicate, 1
-Function, 1
-Consumer, 1
-Supplier, 1
+Optional
+Stream
+Collectors
+Predicate
+Function
+Consumer
+Supplier
 # }
 %%

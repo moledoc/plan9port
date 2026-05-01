@@ -2,166 +2,163 @@
 #include <string.h>
 %}
 
-# generate c code with gperf:
-# gperf -C -E -t -L C -N in_word_set_go keywords_go.gperf > keywords_go_hash.c
-
 struct keyword_go { const char *name; };
 
 %%
 # {
-break, 1
-default, 1
-func, 1
-interface, 1
-select, 1
-case, 1
-defer, 1
-go, 1
-map, 1
-struct, 1
-chan, 1
-else, 1
-goto, 1
-package, 1
-switch, 1
-const, 1
-fallthrough, 1
-if, 1
-range, 1
-type, 1
-continue, 1
-for, 1
-import, 1
-return, 1
-var, 1
+break
+default
+func
+interface
+select
+case
+defer
+go
+map
+struct
+chan
+else
+goto
+package
+switch
+const
+fallthrough
+if
+range
+type
+continue
+for
+import
+return
+var
 #
-bool, 1
-byte, 1
-complex64, 1
-complex128, 1
-error, 1
-float32, 1
-float64, 1
-int, 1
-int8, 1
-int16, 1
-int32, 1
-int64, 1
-rune, 1
-string, 1
-uint, 1
-uint8, 1
-uint16, 1
-uint32, 1
-uint64, 1
-uintptr, 1
+bool
+byte
+complex64
+complex128
+error
+float32
+float64
+int
+int8
+int16
+int32
+int64
+rune
+string
+uint
+uint8
+uint16
+uint32
+uint64
+uintptr
 #
-true, 1
-false, 1
-iota, 1
-nil, 1
+true
+false
+iota
+nil
 #
-append, 1
-cap, 1
-close, 1
-complex, 1
-copy, 1
-delete, 1
-imag, 1
-len, 1
-make, 1
-new, 1
-panic, 1
-print, 1
-println, 1
-real, 1
-recover, 1
+append
+cap
+close
+complex
+copy
+delete
+imag
+len
+make
+new
+panic
+print
+println
+real
+recover
 #
-fmt.Println, 1
-fmt.Printf, 1
-fmt.Sprintf, 1
-fmt.Errorf, 1
-fmt.Scan, 1
-fmt.Scanf, 1
-fmt.Sscan, 1
+fmt.Println
+fmt.Printf
+fmt.Sprintf
+fmt.Errorf
+fmt.Scan
+fmt.Scanf
+fmt.Sscan
 #
-os.Open, 1
-os.Create, 1
-os.Exit, 1
-os.Getenv, 1
-os.Setenv, 1
-os.Args, 1
-os.Stdout, 1
-os.Stderr, 1
+os.Open
+os.Create
+os.Exit
+os.Getenv
+os.Setenv
+os.Args
+os.Stdout
+os.Stderr
 #
-io.Reader, 1
-io.Writer, 1
-io.Copy, 1
-io.ReadAll, 1
+io.Reader
+io.Writer
+io.Copy
+io.ReadAll
 #
-bufio.NewReader, 1
-bufio.NewWriter, 1
-bufio.Scanner, 1
+bufio.NewReader
+bufio.NewWriter
+bufio.Scanner
 #
-strings.Contains, 1
-strings.Split, 1
-strings.Join, 1
-strings.Replace, 1
-strings.ToLower, 1
-strings.ToUpper, 1
-strings.TrimSpace, 1
+strings.Contains
+strings.Split
+strings.Join
+strings.Replace
+strings.ToLower
+strings.ToUpper
+strings.TrimSpace
 #
-strconv.Atoi, 1
-strconv.Itoa, 1
-strconv.ParseFloat, 1
-strconv.ParseBool, 1
+strconv.Atoi
+strconv.Itoa
+strconv.ParseFloat
+strconv.ParseBool
 #
-time.Now, 1
-time.Sleep, 1
-time.Parse, 1
-time.Since, 1
-time.Duration, 1
+time.Now
+time.Sleep
+time.Parse
+time.Since
+time.Duration
 #
-math.Abs, 1
-math.Sqrt, 1
-math.Pow, 1
-math.Floor, 1
-math.Ceil, 1
-math.Max, 1
-math.Min, 1
+math.Abs
+math.Sqrt
+math.Pow
+math.Floor
+math.Ceil
+math.Max
+math.Min
 #
-rand.Int, 1
-rand.Float64, 1
-rand.Seed, 1
+rand.Int
+rand.Float64
+rand.Seed
 #
-sync.Mutex, 1
-sync.WaitGroup, 1
-sync.Once, 1
+sync.Mutex
+sync.WaitGroup
+sync.Once
 #
-context.Background, 1
-context.WithCancel, 1
-context.WithTimeout, 1
+context.Background
+context.WithCancel
+context.WithTimeout
 #
-http.Get, 1
-http.Post, 1
-http.ListenAndServe, 1
-http.HandleFunc, 1
+http.Get
+http.Post
+http.ListenAndServe
+http.HandleFunc
 #
-json.Marshal, 1
-json.Unmarshal, 1
+json.Marshal
+json.Unmarshal
 #
-log.Println, 1
-log.Fatal, 1
-log.Printf, 1
+log.Println
+log.Fatal
+log.Printf
 #
-regexp.MatchString, 1
-regexp.MustCompile, 1
+regexp.MatchString
+regexp.MustCompile
 #
-filepath.Join, 1
-filepath.Base, 1
+filepath.Join
+filepath.Base
 #
-flag.String, 1
-flag.Int, 1
-flag.Parse, 1
+flag.String
+flag.Int
+flag.Parse
 # }
 %%

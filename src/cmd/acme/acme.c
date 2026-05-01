@@ -1063,6 +1063,15 @@ iconinit(void)
 		textcols[TEXT] = display->black;
 		textcols[HTEXT] = display->black;
 
+		syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellow);
+		syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlue);
+		syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMagenta);
+		syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedgreen);
+		syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGreyblue);
+		syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
+		syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
+
+
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);

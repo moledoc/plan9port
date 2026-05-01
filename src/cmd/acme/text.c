@@ -12,6 +12,8 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "keywords.h"
+#include <stdio.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -20,6 +22,148 @@ static Rune Ldot[] = { '.', 0 };
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
 };
+
+Image 	*syhlcols[SYHL_NCOL];
+
+static char offset_buf[1024] = {0};
+static char buf[1024] = {0};
+
+void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
+
+	int offset = 0;
+	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
+		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z') {
+			int offset_s = offset;
+			offset++;
+			ptr++;
+			for (; offset < b->nrune && *ptr != '\0' && 
+				(('a' <= *ptr && *ptr <= 'z') ||
+					('A' <= *ptr && *ptr <= 'Z') || 
+					('0' <= *ptr && *ptr <= '9') || 
+					*ptr == '_' || *ptr == '-'); ptr++, offset++) {}
+			int buf_len = offset-offset_s;
+			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
+			memcpy(offset_buf, (char *)b->ptr, offset);
+
+			Image *text = NULL;
+			if (in_word_set_codetags(buf, buf_len)) text = syhlcols[SYHL_CODETAG];
+
+			switch (extension) {
+				case EXT_C:
+					if (in_word_set_c(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					break;
+				case EXT_GO:
+					if (in_word_set_go(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					break;
+				case EXT_PYTHON:
+					if (in_word_set_python(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					break;
+				case EXT_JAVA:
+					if (in_word_set_java(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					break;
+			}
+
+			if (text != NULL) {
+				int bufwid = stringnwidth(f->font, offset_buf, offset_s);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, buf_len, back, ZP);
+			}
+
+			memset(buf, 0, buf_len);
+			memset(offset_buf, 0, offset);
+			// NOTE: we passed end; step back
+			offset--; ptr--;
+		
+		} else if ('0' <= *ptr && *ptr <= '9') {
+			int offset_s = offset;
+			offset++;
+			ptr++;
+			for (; offset < b->nrune && *ptr != '\0' && 
+				('0' <= *ptr && *ptr <= '9' || 
+					*ptr == '.' ||
+					// NOTE: include a-zA-Z, so that invalid nr will be filtered out; eg 0x7 - valid, 9l is not
+					('a' <= *ptr && *ptr <= 'z') ||
+					('A' <= *ptr && *ptr <= 'Z')); ptr++, offset++) {}
+			int buf_len = offset-offset_s;
+			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
+			memcpy(offset_buf, (char *)b->ptr, offset);
+
+			char *end;
+			strtold(buf, &end);
+			if (buf != end && *end == '\0') {
+				int bufwid = stringnwidth(f->font, offset_buf, offset_s);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_NUMBER], ZP, f->font, buf, buf_len, back, ZP);
+			}
+
+			memset(buf, 0, buf_len);
+			memset(offset_buf, 0, offset);
+			// NOTE: we passed end; step back
+			offset--; ptr--;
+		} else if (*ptr == '"' || *ptr == '\'') {
+			buf[0] = *ptr;
+			memcpy(offset_buf, (char *)b->ptr, offset);
+			int bufwid = stringnwidth(f->font, offset_buf, offset);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_QUOTE], ZP, f->font, buf, 1, back, ZP);
+			buf[0] = 0;
+			memset(offset_buf, 0, offset);
+		} else if (*ptr == '\\') {
+			buf[0] = '\\';
+			buf[1] = *(ptr+1);
+			memcpy(offset_buf, (char *)b->ptr, offset);
+			int bufwid = stringnwidth(f->font, offset_buf, offset);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_ESCAPE], ZP, f->font, buf, 2, back, ZP);
+			memset(buf, 0, 2);
+			memset(offset_buf, 0, offset);
+			// NOTE: step over escape end
+			offset++; ptr++;
+		} else if (*ptr == '(' || *ptr == ')' || 
+					*ptr == '[' || *ptr == ']' || 
+					*ptr == '{' || *ptr == '}') {
+			buf[0] = *ptr;
+			memcpy(offset_buf, (char *)b->ptr, offset);
+			int bufwid = stringnwidth(f->font, offset_buf, offset);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_PAREN], ZP, f->font, buf, 2, back, ZP);
+			buf[0] = 0;
+			memset(offset_buf, 0, offset);
+		} else if (*ptr == '/' && (*(ptr+1) == '/' || *(ptr+1) == '*') || 
+				(*ptr == '*' && *(ptr+1) == '/')) {
+			buf[0] = *ptr;
+			buf[1] = *(ptr+1);
+			memcpy(offset_buf, (char *)b->ptr, offset);
+			int bufwid = stringnwidth(f->font, offset_buf, offset);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_COMMENT], ZP, f->font, buf, 2, back, ZP);
+			memset(buf, 0, 2);
+			memset(offset_buf, 0, offset);
+			// NOTE: step over comment end
+			offset++; ptr++;
+		}
+	}
+
+}
+
+void tsyhl(Text *t)
+{
+
+	if (t->what != Body) {
+		return;
+	}
+
+	Frbox *b;
+	int nb;
+
+	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
+	// printf("HERE: %d x=%d y=%d\n", t->extension, pt.x, pt.y);
+	// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
+
+
+	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
+		_frcklinewrap(&t->fr, &pt, b);
+		if(!t->fr.noredraw && b->nrune >= 0) {
+			_frsyhl(&t->fr, pt, b, t->fr.cols[BACK], t->extension);
+		}
+		pt.x += b->wid;
+	}
+}
+
 
 void
 textinit(Text *t, File *f, Rectangle r, Reffont *rf, Image *cols[NCOL])
@@ -291,8 +435,13 @@ textload(Text *t, uint q0, char *file, int setqid)
 		bufread(&t->file->b, q, rp, n);
 		if(q < t->org)
 			t->org += n;
-		else if(q <= t->org+t->fr.nchars)
+		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
+			tsyhl(t);
+			// printf("HERE3: %d\n", t->extension);
+			// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
+
+		}
 		if(t->fr.lastlinefull)
 			break;
 	}
@@ -398,8 +547,13 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		t->q0 += n;
 	if(q0 < t->org)
 		t->org += n;
-	else if(q0 <= t->org+t->fr.nchars)
+	else if(q0 <= t->org+t->fr.nchars) {
 		frinsert(&t->fr, r, r+n, q0-t->org);
+		tsyhl(t);
+		// printf("HERE4: %d\n", t->extension);
+		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
+
+	}
 	if(t->w){
 		c = 'i';
 		if(t->what == Body)
@@ -452,6 +606,10 @@ textfill(Text *t)
 			}
 		}
 		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
+		tsyhl(t);
+		// Point ptxx = frptofchar(&t->fr, 0); // Get the starting Point of the frame
+		// printf("HERE1: %d x=%d y=%d\n", t->extension, ptxx.x, ptxx.y);
+		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -833,7 +991,7 @@ texttype(Text *t, Rune r)
 			return;
 		nr = runestrlen(rp);
 		break;	/* fall through to normal insertion case */
-	case 0x1B:
+	case 0x1B: /* escape */
 		if(t->eq0 != ~0) {
 			if(t->eq0 <= t->q0)
 				textsetselect(t, t->eq0, t->q0);
@@ -1637,6 +1795,9 @@ textsetorigin(Text *t, uint org, int exact)
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
 		frinsert(&t->fr, r, r+n, 0);
+		tsyhl(t);
+		// printf("HERE2: %d\n", t->extension);
+		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);

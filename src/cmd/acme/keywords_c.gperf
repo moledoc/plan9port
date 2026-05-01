@@ -2,247 +2,250 @@
 #include <string.h>
 %}
 
-# generate c code with gperf:
-# gperf -C -E -t -L C -N in_word_set_c keywords_c.gperf > keywords_c_hash.c
-
 struct keyword_c { const char *name; };
 
 %%
 # {
-auto, 1
-break, 1
-case, 1
-char, 1
-const, 1
-continue, 1
-default, 1
-do, 1
-double, 1
-else, 1
-enum, 1
-extern, 1
-float, 1
-for, 1
-goto, 1
-if, 1
-inline, 1
-int, 1
-long, 1
-register, 1
-restrict, 1
-return, 1
-short, 1
-signed, 1
-sizeof, 1
-static, 1
-struct, 1
-switch, 1
-typedef, 1
-union, 1
-unsigned, 1
-void, 1
-volatile, 1
-while, 1
-_Alignas, 1
-_Alignof, 1
-_Atomic, 1
-_Bool, 1
-_Complex, 1
-_Generic, 1
-_Imaginary, 1
-_Noreturn, 1
-_Static_assert, 1
-_Thread_local, 1
+auto
+break
+case
+char
+const
+continue
+default
+define
+do
+double
+else
+endif
+enum
+extern
+float
+for
+goto
+if
+ifndef
+ifdef
+include
+inline
+int
+long
+register
+restrict
+return
+short
+signed
+sizeof
+static
+struct
+switch
+typedef
+union
+unsigned
+void
+volatile
+while
+_Alignas
+_Alignof
+_Atomic
+_Bool
+_Complex
+_Generic
+_Imaginary
+_Noreturn
+_Static_assert
+_Thread_local
 #
-size_t, 1
-ptrdiff_t, 1
-wchar_t, 1
-wint_t, 1
-int8_t, 1
-int16_t, 1
-int32_t, 1
-int64_t, 1
-uint8_t, 1
-uint16_t, 1
-uint32_t, 1
-uint64_t, 1
-intptr_t, 1
-uintptr_t, 1
-FILE, 1
-fpos_t, 1
-time_t, 1
-clock_t, 1
-tm, 1
-va_list, 1
-div_t, 1
-ldiv_t, 1
-lldiv_t, 1
+size_t
+ptrdiff_t
+wchar_t
+wint_t
+int8_t
+int16_t
+int32_t
+int64_t
+uint
+uint8_t
+uint16_t
+uint32_t
+uint64_t
+intptr_t
+uintptr_t
+FILE
+fpos_t
+time_t
+clock_t
+tm
+va_list
+div_t
+ldiv_t
+lldiv_t
 #
-printf, 1
-fprintf, 1
-sprintf, 1
-snprintf, 1
-scanf, 1
-fscanf, 1
-sscanf, 1
-fopen, 1
-freopen, 1
-fclose, 1
-fflush, 1
-fgetc, 1
-fgets, 1
-fputc, 1
-fputs, 1
-getc, 1
-getchar, 1
-putc, 1
-putchar, 1
-puts, 1
-fread, 1
-fwrite, 1
-fseek, 1
-ftell, 1
-rewind, 1
-perror, 1
+printf
+fprintf
+sprintf
+snprintf
+scanf
+fscanf
+sscanf
+fopen
+freopen
+fclose
+fflush
+fgetc
+fgets
+fputc
+fputs
+getc
+getchar
+putc
+putchar
+puts
+fread
+fwrite
+fseek
+ftell
+rewind
+perror
 #
-malloc, 1
-calloc, 1
-realloc, 1
-free, 1
-aligned_alloc, 1
-exit, 1
-quick_exit, 1
-_Exit, 1
-abort, 1
-atexit, 1
-at_quick_exit, 1
-system, 1
-getenv, 1
+malloc
+calloc
+realloc
+free
+aligned_alloc
+exit
+quick_exit
+_Exit
+abort
+atexit
+at_quick_exit
+system
+getenv
 #
-atoi, 1
-atol, 1
-atoll, 1
-atof, 1
-strtol, 1
-strtoll, 1
-strtoul, 1
-strtoull, 1
-strtof, 1
-strtod, 1
-strtold, 1
+atoi
+atol
+atoll
+atof
+strtol
+strtoll
+strtoul
+strtoull
+strtof
+strtod
+strtold
 #
-bsearch, 1
-qsort, 1
-abs, 1
-labs, 1
-llabs, 1
-div, 1
-ldiv, 1
-lldiv, 1
+bsearch
+qsort
+abs
+labs
+llabs
+div
+ldiv
+lldiv
 #
-strlen, 1
-strcpy, 1
-strncpy, 1
-strcat, 1
-strncat, 1
-strcmp, 1
-strncmp, 1
-strchr, 1
-strrchr, 1
-strstr, 1
-strtok, 1
-strspn, 1
-strcspn, 1
-strpbrk, 1
-memcpy, 1
-memmove, 1
-memcmp, 1
-memchr, 1
-memset, 1
+strlen
+strcpy
+strncpy
+strcat
+strncat
+strcmp
+strncmp
+strchr
+strrchr
+strstr
+strtok
+strspn
+strcspn
+strpbrk
+memcpy
+memmove
+memcmp
+memchr
+memset
 #
-isalnum, 1
-isalpha, 1
-isdigit, 1
-islower, 1
-isupper, 1
-isspace, 1
-isprint, 1
-ispunct, 1
-isxdigit, 1
-tolower, 1
-toupper, 1
+isalnum
+isalpha
+isdigit
+islower
+isupper
+isspace
+isprint
+ispunct
+isxdigit
+tolower
+toupper
 #
-time, 1
-clock, 1
-difftime, 1
-mktime, 1
-strftime, 1
-localtime, 1
-gmtime, 1
-asctime, 1
-ctime, 1
+time
+clock
+difftime
+mktime
+strftime
+localtime
+gmtime
+asctime
+ctime
 #
-sin, 1
-cos, 1
-tan, 1
-asin, 1
-acos, 1
-atan, 1
-atan2, 1
-sinh, 1
-cosh, 1
-tanh, 1
-exp, 1
-log, 1
-log10, 1
-pow, 1
-sqrt, 1
-ceil, 1
-floor, 1
-fabs, 1
-fmod, 1
+sin
+cos
+tan
+asin
+acos
+atan
+atan2
+sinh
+cosh
+tanh
+exp
+log
+log10
+pow
+sqrt
+ceil
+floor
+fabs
+fmod
 #
-assert, 1
+assert
 #
-NULL, 1
-EOF, 1
-FILENAME_MAX, 1
-FOPEN_MAX, 1
-TMP_MAX, 1
-L_tmpnam, 1
-BUFSIZ, 1
-SEEK_SET, 1
-SEEK_CUR, 1
-SEEK_END, 1
-EXIT_SUCCESS, 1
-EXIT_FAILURE, 1
-RAND_MAX, 1
-CLOCKS_PER_SEC, 1
-CHAR_BIT, 1
-INT_MAX, 1
-INT_MIN, 1
-LONG_MAX, 1
-LONG_MIN, 1
-SCHAR_MAX, 1
-SCHAR_MIN, 1
-UCHAR_MAX, 1
-UINT_MAX, 1
-ULONG_MAX, 1
-FLT_MAX, 1
-FLT_MIN, 1
-DBL_MAX, 1
-DBL_MIN, 1
-LDBL_MAX, 1
-LDBL_MIN, 1
+NULL
+EOF
+FILENAME_MAX
+FOPEN_MAX
+TMP_MAX
+L_tmpnam
+BUFSIZ
+SEEK_SET
+SEEK_CUR
+SEEK_END
+EXIT_SUCCESS
+EXIT_FAILURE
+RAND_MAX
+CLOCKS_PER_SEC
+CHAR_BIT
+INT_MAX
+INT_MIN
+LONG_MAX
+LONG_MIN
+SCHAR_MAX
+SCHAR_MIN
+UCHAR_MAX
+UINT_MAX
+ULONG_MAX
+FLT_MAX
+FLT_MIN
+DBL_MAX
+DBL_MIN
+LDBL_MAX
+LDBL_MIN
 #
-errno, 1
-EDOM, 1
-ERANGE, 1
-EILSEQ, 1
+errno
+EDOM
+ERANGE
+EILSEQ
 #
-true, 1
-false, 1
+true
+false
 #
-offsetof, 1
+offsetof
 # }
 %%

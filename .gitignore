@@ -2,6 +2,7 @@
 *.a
 *.o
 *.orig
+*_hash.c
 LOCAL.config
 bin/"
 bin/""
