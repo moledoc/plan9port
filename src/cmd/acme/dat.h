@@ -56,6 +56,10 @@ typedef	struct	Timer Timer;
 typedef	struct	Window Window;
 typedef	struct	Xfid Xfid;
 
+// NOTE: define additional colors for syntax highlighting
+#define		DGrey 0x808080FF
+#define		DYellowGold 0xFFC400FF
+
 struct Runestr
 {
 	Rune	*r;
@@ -180,7 +184,6 @@ enum	/* Text.extension */
 	EXT_JAVA,
 	EXT_COUNT
 };
-
 
 enum { /* syntax_highlighting tokens */
 	SYHL_CODETAG,

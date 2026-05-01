@@ -25,10 +25,12 @@ enum{
 
 Image 	*syhlcols[SYHL_NCOL];
 
-static char offset_buf[1024] = {0};
-static char buf[1024] = {0};
-
+// TODO: proper highlighting handling
+// FIXME: cursor gets overdrawn when syntax highlighting
 void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
+
+	static char offset_buf[1024] = {0};
+	static char buf[64] = {0};
 
 	int offset = 0;
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
@@ -140,8 +142,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 
 }
 
-void tsyhl(Text *t)
-{
+void tsyhl(Text *t) {
 
 	if (t->what != Body) {
 		return;
@@ -151,10 +152,6 @@ void tsyhl(Text *t)
 	int nb;
 
 	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
-	// printf("HERE: %d x=%d y=%d\n", t->extension, pt.x, pt.y);
-	// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
-
-
 	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
 		_frcklinewrap(&t->fr, &pt, b);
 		if(!t->fr.noredraw && b->nrune >= 0) {
