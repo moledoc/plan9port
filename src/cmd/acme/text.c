@@ -167,61 +167,40 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, p0, p1, buf);
 
 
-			if (f->p1 < p0 || p1 < f->p0) { // nothing in selection
+			if (f->p1 < p0 || p1 < f->p0 || f->p0 == f->p1) { // nothing in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 				continue;
 			} else if (f->p0 <= p0 && p1 <= f->p1) { // everything in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
-				continue;
+				continue;	
 			}
 
-	// NOTE: potential idea based on selrestore, but the buf and buf_len need to be revised - want to commit, this is just wip
-	/* they now are known to overlap */
-	Point pt0 = (Point){.x=pt.x+bufwid_offset, .y=pt.y};
-	/* before selection */
-	if(p0 < f->p0){
-		stringnbg(f->b, pt0, text, ZP, f->font, buf, f->p0-p0, textcols[BACK], ZP);
-		p0 = f->p0;
-		pt0 = frptofchar(f, p0);
-	}
-	/* after selection */
-	if(p1 > f->p1){
-		stringnbg(f->b, pt0, text, ZP, f->font, buf+(f->p1-p0), p1-f->p1, textcols[BACK], ZP);
-		p1 = f->p1;
-	}
-	/* inside selection */
-	stringnbg(f->b, pt0, text, ZP, f->font, buf+p0, p1-p0, textcols[HIGH], ZP);
-
-
-
-/*
-			// before selection
-			if (0 && f->p1 < q0) {
-				int unsel_len = f->p0 - p0;
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, unsel_len, textcols[BACK], ZP);
-				int unsel_bufwid = stringnwidth(f->font, buf, unsel_len);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+unsel_bufwid, .y=pt.y}, text, ZP, f->font, buf+unsel_len, buf_len-unsel_len, textcols[HIGH], ZP);
-
-			} else if (sel_pt_e.y == pt.y && sel_pt_s.y < pt.y) { // selection ends on this line
-				ulong sel_p1 = frptofchar(f, sel_pt_e);
-				int sel_buf_len = sel_p1 - offset_s;
-				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, sel_buf_len, textcols[HIGH], ZP);
-				int bufwid_sel = stringnwidth(f->font, buf, sel_buf_len);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid+bufwid_sel, .y=pt.y}, text, ZP, f->font, buf+sel_buf_len, buf_len - sel_buf_len, textcols[BACK], ZP);
-
-			} else if (sel_pt_s.y == pt.y && sel_pt_e.y == pt.y) { // selection starts and ends on this line
-				ulong sel_p0 = frptofchar(f, sel_pt_s);
-				ulong sel_p1 = frptofchar(f, sel_pt_e);
-				int sel_buf_len = sel_p1 - offset_s;
-				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, sel_buf_len, textcols[HIGH], ZP);
-				int bufwid_sel = stringnwidth(f->font, buf, sel_buf_len);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid+bufwid_sel, .y=pt.y}, text, ZP, f->font, buf+sel_buf_len, buf_len - sel_buf_len, textcols[BACK], ZP);
- }*/
+			// NOTE: inspiration from selrestore
+			/* they now are known to overlap */
+			/* before selection */
+			int diff_before = 0;
+			int diff_after = 0;
+			if(p0 < f->p0){
+				diff_before = f->p0-p0;
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, diff_before, textcols[BACK], ZP);
+			}
+			/* after selection */
+			if(f->p1 < p1){
+				diff_after = p1-f->p1;
+				int bufwid_until_after = stringnwidth(f->font, buf, buf_len-diff_after);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_after, .y=pt.y}, text, ZP, f->font, buf+(buf_len-diff_after), diff_after, textcols[BACK], ZP);
+			}
+			/* inside selection */
+			int bufwid_until_before = stringnwidth(f->font, buf, diff_before);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
 		}
 	}
 
 }
 
+
+// FIXME: New segfaults
+// FIXME: flickering when selecting
 void tsyhl(Text *t) {
 
 	if (t->what != Body) {
@@ -296,6 +275,7 @@ textredraw(Text *t, Rectangle r, Font *f, Image *b, int odx)
 		textfill(t);
 		textsetselect(t, t->q0, t->q1);
 	}
+	tsyhl(t);
 }
 
 int
@@ -521,7 +501,7 @@ textload(Text *t, uint q0, char *file, int setqid)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
-			tsyhl(t);
+			// tsyhl(t);
 			// printf("HERE3: %d\n", t->extension);
 			// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 
@@ -540,6 +520,7 @@ textload(Text *t, uint q0, char *file, int setqid)
 		}
 		textsetselect(u, q0, q0);
 	}
+	tsyhl(t);
 	if(nulls)
 		warning(nil, "%s: NUL bytes elided\n", file);
 	free(d);
@@ -621,7 +602,6 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 					textscrdraw(u);
 				}
 			}
-
 	}
 	if(q0 < t->iq1)
 		t->iq1 += n;
@@ -633,7 +613,7 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
 		frinsert(&t->fr, r, r+n, q0-t->org);
-		tsyhl(t);
+		// tsyhl(t);
 		// printf("HERE4: %d\n", t->extension);
 		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 
@@ -647,6 +627,7 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		else
 			winevent(t->w, "%c%d %d 0 0 \n", c, q0, q0+n, n);
 	}
+	tsyhl(t);
 }
 
 void
@@ -1261,6 +1242,7 @@ textselect(Text *t)
 	if(q0==q1 && selectq==q0){
 		textdoubleclick(t, &q0, &q1);
 		textsetselect(t, q0, q1);
+		// tsyhl(t);
 		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
@@ -1277,6 +1259,7 @@ textselect(Text *t)
 	if(mouse->buttons == b){
 		t->fr.scroll = framescroll;
 		frselect(&t->fr, mousectl);
+		// tsyhl(t);
 		/* horrible botch: while asleep, may have lost selection altogether */
 		if(selectq > t->file->b.nc)
 			selectq = t->org + t->fr.p0;
@@ -1301,6 +1284,7 @@ textselect(Text *t)
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
+	// tsyhl(t);
 	flushimage(display, 1);
 	state = None;	/* what we've done; undo when possible */
 	while(mouse->buttons){
@@ -1315,6 +1299,7 @@ textselect(Text *t)
 				if(state==Paste && t->what==Body){
 					winundo(t->w, TRUE);
 					textsetselect(t, q0, t->q1);
+					// tsyhl(t);
 					state = None;
 				}else if(state != Cut){
 					cut(t, t, nil, TRUE, TRUE, nil, 0);
@@ -1324,6 +1309,7 @@ textselect(Text *t)
 				if(state==Cut && t->what==Body){
 					winundo(t->w, TRUE);
 					textsetselect(t, q0, t->q1);
+					// tsyhl(t);
 					state = None;
 				}else if(state != Paste){
 					paste(t, t, nil, TRUE, FALSE, nil, 0);
@@ -1879,7 +1865,7 @@ textsetorigin(Text *t, uint org, int exact)
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
 		frinsert(&t->fr, r, r+n, 0);
-		tsyhl(t);
+		// tsyhl(t);
 		// printf("HERE2: %d\n", t->extension);
 		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 		free(r);
@@ -1891,6 +1877,7 @@ textsetorigin(Text *t, uint org, int exact)
 	textsetselect(t, t->q0, t->q1);
 	if(fixup && t->fr.p1 > t->fr.p0)
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
+	tsyhl(t);
 }
 
 void
