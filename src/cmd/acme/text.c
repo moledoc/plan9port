@@ -162,17 +162,36 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			int bufwid_buf = stringnwidth(f->font, buf, buf_len);
 
 
-			ulong q0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
-			ulong q1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
-			printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, q0, q1, buf);
+			ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
+			ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
+			printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, p0, p1, buf);
 
 
-			if (f->p0 == f->p1) { // nothing in selection
+			if (f->p1 < p0 || p1 < f->p0) { // nothing in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 				continue;
-			} else if (f->p0 <= q0 && q1 <= f->p1) { // everything in selection
+			} else if (f->p0 <= p0 && p1 <= f->p1) { // everything in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
 				continue;
+			}
+
+	// NOTE: potential idea based on selrestore, but the buf and buf_len need to be revised - want to commit, this is just wip
+	/* they now are known to overlap */
+	Point pt0 = (Point){.x=pt.x+bufwid_offset, .y=pt.y};
+	/* before selection */
+	if(p0 < f->p0){
+		stringnbg(f->b, pt0, text, ZP, f->font, buf, f->p0-p0, textcols[BACK], ZP);
+		p0 = f->p0;
+		pt0 = frptofchar(f, p0);
+	}
+	/* after selection */
+	if(p1 > f->p1){
+		stringnbg(f->b, pt0, text, ZP, f->font, buf+(f->p1-p0), p1-f->p1, textcols[BACK], ZP);
+		p1 = f->p1;
+	}
+	/* inside selection */
+	stringnbg(f->b, pt0, text, ZP, f->font, buf+p0, p1-p0, textcols[HIGH], ZP);
+
 
 
 /*
@@ -198,8 +217,6 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 				int bufwid_sel = stringnwidth(f->font, buf, sel_buf_len);
 				stringnbg(f->b, (Point){.x=pt.x+bufwid+bufwid_sel, .y=pt.y}, text, ZP, f->font, buf+sel_buf_len, buf_len - sel_buf_len, textcols[BACK], ZP);
  }*/
-			}
-			// TODO: selection starts and ends on the same line
 		}
 	}
 
