@@ -25,17 +25,23 @@ enum{
 
 Image 	*syhlcols[SYHL_NCOL];
 
-// TODO: proper highlighting handling
 // FIXME: cursor gets overdrawn when syntax highlighting
 void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 
 	static char offset_buf[1024] = {0};
 	static char buf[64] = {0};
+	int buf_len = 0;
 
 	int offset = 0;
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
+
+		memset(offset_buf, 0, offset);
+		int should_draw = 0;
+		int offset_s = offset;
+		Image *text = textcols[TEXT];
+
 		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z') {
-			int offset_s = offset;
+			offset_s = offset;
 			offset++;
 			ptr++;
 			for (; offset < b->nrune && *ptr != '\0' && 
@@ -43,40 +49,36 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 					('A' <= *ptr && *ptr <= 'Z') || 
 					('0' <= *ptr && *ptr <= '9') || 
 					*ptr == '_' || *ptr == '-'); ptr++, offset++) {}
-			int buf_len = offset-offset_s;
-			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
-			memcpy(offset_buf, (char *)b->ptr, offset);
 
-			Image *text = NULL;
+			buf_len = offset-offset_s;
+			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
+
 			if (in_word_set_codetags(buf, buf_len)) text = syhlcols[SYHL_CODETAG];
 
 			switch (extension) {
 				case EXT_C:
 					if (in_word_set_c(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					should_draw = 1;
 					break;
 				case EXT_GO:
 					if (in_word_set_go(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					should_draw = 1;
 					break;
 				case EXT_PYTHON:
 					if (in_word_set_python(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					should_draw = 1;
 					break;
 				case EXT_JAVA:
 					if (in_word_set_java(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
+					should_draw = 1;
 					break;
 			}
 
-			if (text != NULL) {
-				int bufwid = stringnwidth(f->font, offset_buf, offset_s);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, buf_len, back, ZP);
-			}
-
-			memset(buf, 0, buf_len);
-			memset(offset_buf, 0, offset);
 			// NOTE: we passed end; step back
 			offset--; ptr--;
 		
 		} else if ('0' <= *ptr && *ptr <= '9') {
-			int offset_s = offset;
+			offset_s = offset;
 			offset++;
 			ptr++;
 			for (; offset < b->nrune && *ptr != '\0' && 
@@ -85,59 +87,65 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 					// NOTE: include a-zA-Z, so that invalid nr will be filtered out; eg 0x7 - valid, 9l is not
 					('a' <= *ptr && *ptr <= 'z') ||
 					('A' <= *ptr && *ptr <= 'Z')); ptr++, offset++) {}
-			int buf_len = offset-offset_s;
+
+			buf_len = offset-offset_s;
 			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
-			memcpy(offset_buf, (char *)b->ptr, offset);
 
 			char *end;
 			strtold(buf, &end);
 			if (buf != end && *end == '\0') {
-				int bufwid = stringnwidth(f->font, offset_buf, offset_s);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_NUMBER], ZP, f->font, buf, buf_len, back, ZP);
+				should_draw = 1;
+				text = syhlcols[SYHL_NUMBER];
 			}
 
-			memset(buf, 0, buf_len);
-			memset(offset_buf, 0, offset);
 			// NOTE: we passed end; step back
 			offset--; ptr--;
 		} else if (*ptr == '"' || *ptr == '\'') {
+			offset_s = offset;
+			should_draw = 1;
+			buf_len = 1;
 			buf[0] = *ptr;
-			memcpy(offset_buf, (char *)b->ptr, offset);
-			int bufwid = stringnwidth(f->font, offset_buf, offset);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_QUOTE], ZP, f->font, buf, 1, back, ZP);
-			buf[0] = 0;
-			memset(offset_buf, 0, offset);
+			text = syhlcols[SYHL_QUOTE];
 		} else if (*ptr == '\\') {
-			buf[0] = '\\';
-			buf[1] = *(ptr+1);
-			memcpy(offset_buf, (char *)b->ptr, offset);
-			int bufwid = stringnwidth(f->font, offset_buf, offset);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_ESCAPE], ZP, f->font, buf, 2, back, ZP);
-			memset(buf, 0, 2);
-			memset(offset_buf, 0, offset);
+			offset_s = offset;
+			should_draw = 1;
+			buf_len = 1;
+			buf[0] = *ptr;
+			if (offset+1 < b->nrune) {
+				buf[1] = *(ptr+1);
+				buf_len += 1;
+			}
+			text = syhlcols[SYHL_ESCAPE];
 			// NOTE: step over escape end
 			offset++; ptr++;
 		} else if (*ptr == '(' || *ptr == ')' || 
 					*ptr == '[' || *ptr == ']' || 
-					*ptr == '{' || *ptr == '}' || 
-					*ptr == '<' || *ptr == '>') {
+					*ptr == '{' || *ptr == '}') {
+			offset_s = offset;
+			should_draw = 1;
 			buf[0] = *ptr;
-			memcpy(offset_buf, (char *)b->ptr, offset);
-			int bufwid = stringnwidth(f->font, offset_buf, offset);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_PAREN], ZP, f->font, buf, 2, back, ZP);
-			buf[0] = 0;
-			memset(offset_buf, 0, offset);
+			buf_len = 1;
+			text = syhlcols[SYHL_PAREN];
 		} else if (*ptr == '/' && (*(ptr+1) == '/' || *(ptr+1) == '*') || 
 				(*ptr == '*' && *(ptr+1) == '/')) {
+			offset_s = offset;
+			should_draw = 1;
+			buf_len = 1;
 			buf[0] = *ptr;
-			buf[1] = *(ptr+1);
-			memcpy(offset_buf, (char *)b->ptr, offset);
-			int bufwid = stringnwidth(f->font, offset_buf, offset);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, syhlcols[SYHL_COMMENT], ZP, f->font, buf, 2, back, ZP);
-			memset(buf, 0, 2);
-			memset(offset_buf, 0, offset);
+			if (offset+1 < b->nrune) {
+				buf[1] = *(ptr+1);
+				buf_len += 1;
+			}
+			text = syhlcols[SYHL_COMMENT];
 			// NOTE: step over comment end
 			offset++; ptr++;
+		}
+
+		if (should_draw) {
+			memcpy(offset_buf, (char *)b->ptr, offset_s);
+			int bufwid = stringnwidth(f->font, offset_buf, offset_s);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
+			memset(buf, 0, buf_len);
 		}
 	}
 
