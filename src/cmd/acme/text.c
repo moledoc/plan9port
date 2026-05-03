@@ -26,19 +26,23 @@ enum{
 Image 	*syhlcols[SYHL_NCOL];
 
 // FIXME: cursor gets overdrawn when syntax highlighting
-void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
+void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
-	static char buf[64] = {0};
+	static char buf[128] = {0};
 	int buf_len = 0;
-
 	int offset = 0;
+	int offset_s = offset;
+	int should_draw = 0;
+
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
 
 		memset(offset_buf, 0, offset);
-		int should_draw = 0;
-		int offset_s = offset;
-		Image *text = textcols[TEXT];
+		memset(buf, 0, sizeof(buf));
+
+		should_draw = 0;
+		offset_s = offset;
+		Image *text = NULL;
 
 		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z') {
 			offset_s = offset;
@@ -53,24 +57,35 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 			buf_len = offset-offset_s;
 			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
 
-			if (in_word_set_codetags(buf, buf_len)) text = syhlcols[SYHL_CODETAG];
+			if (in_word_set_codetags(buf, buf_len)) {
+				text = syhlcols[SYHL_CODETAG];
+				should_draw = 1;
+			}
 
 			switch (extension) {
 				case EXT_C:
-					if (in_word_set_c(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
-					should_draw = 1;
+					if (in_word_set_c(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
+					}
 					break;
 				case EXT_GO:
-					if (in_word_set_go(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
-					should_draw = 1;
+					if (in_word_set_go(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
+					}
 					break;
 				case EXT_PYTHON:
-					if (in_word_set_python(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
-					should_draw = 1;
+					if (in_word_set_python(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];;
+						should_draw = 1;
+					}
 					break;
 				case EXT_JAVA:
-					if (in_word_set_java(buf, buf_len)) text = syhlcols[SYHL_KEYWORD];
-					should_draw = 1;
+					if (in_word_set_java(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
+					}
 					break;
 			}
 
@@ -108,12 +123,12 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 			text = syhlcols[SYHL_QUOTE];
 		} else if (*ptr == '\\') {
 			offset_s = offset;
-			should_draw = 1;
 			buf_len = 1;
 			buf[0] = *ptr;
 			if (offset+1 < b->nrune) {
 				buf[1] = *(ptr+1);
 				buf_len += 1;
+				should_draw = 1;
 			}
 			text = syhlcols[SYHL_ESCAPE];
 			// NOTE: step over escape end
@@ -129,23 +144,62 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, Image *back, int extension) {
 		} else if (*ptr == '/' && (*(ptr+1) == '/' || *(ptr+1) == '*') || 
 				(*ptr == '*' && *(ptr+1) == '/')) {
 			offset_s = offset;
-			should_draw = 1;
 			buf_len = 1;
 			buf[0] = *ptr;
 			if (offset+1 < b->nrune) {
 				buf[1] = *(ptr+1);
 				buf_len += 1;
+				should_draw = 1;
 			}
 			text = syhlcols[SYHL_COMMENT];
 			// NOTE: step over comment end
 			offset++; ptr++;
 		}
 
-		if (should_draw) {
+		if (should_draw && text != NULL) {
 			memcpy(offset_buf, (char *)b->ptr, offset_s);
-			int bufwid = stringnwidth(f->font, offset_buf, offset_s);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
-			memset(buf, 0, buf_len);
+			int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
+			int bufwid_buf = stringnwidth(f->font, buf, buf_len);
+
+
+			ulong q0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
+			ulong q1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
+			printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, q0, q1, buf);
+
+
+			if (f->p0 == f->p1) { // nothing in selection
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
+				continue;
+			} else if (f->p0 <= q0 && q1 <= f->p1) { // everything in selection
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
+				continue;
+
+
+/*
+			// before selection
+			if (0 && f->p1 < q0) {
+				int unsel_len = f->p0 - p0;
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, unsel_len, textcols[BACK], ZP);
+				int unsel_bufwid = stringnwidth(f->font, buf, unsel_len);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+unsel_bufwid, .y=pt.y}, text, ZP, f->font, buf+unsel_len, buf_len-unsel_len, textcols[HIGH], ZP);
+
+			} else if (sel_pt_e.y == pt.y && sel_pt_s.y < pt.y) { // selection ends on this line
+				ulong sel_p1 = frptofchar(f, sel_pt_e);
+				int sel_buf_len = sel_p1 - offset_s;
+				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, sel_buf_len, textcols[HIGH], ZP);
+				int bufwid_sel = stringnwidth(f->font, buf, sel_buf_len);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid+bufwid_sel, .y=pt.y}, text, ZP, f->font, buf+sel_buf_len, buf_len - sel_buf_len, textcols[BACK], ZP);
+
+			} else if (sel_pt_s.y == pt.y && sel_pt_e.y == pt.y) { // selection starts and ends on this line
+				ulong sel_p0 = frptofchar(f, sel_pt_s);
+				ulong sel_p1 = frptofchar(f, sel_pt_e);
+				int sel_buf_len = sel_p1 - offset_s;
+				stringnbg(f->b, (Point){.x=pt.x+bufwid, .y=pt.y}, text, ZP, f->font, buf, sel_buf_len, textcols[HIGH], ZP);
+				int bufwid_sel = stringnwidth(f->font, buf, sel_buf_len);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid+bufwid_sel, .y=pt.y}, text, ZP, f->font, buf+sel_buf_len, buf_len - sel_buf_len, textcols[BACK], ZP);
+ }*/
+			}
+			// TODO: selection starts and ends on the same line
 		}
 	}
 
@@ -158,13 +212,20 @@ void tsyhl(Text *t) {
 	}
 
 	Frbox *b;
-	int nb;
+	int nb, nc;
 
 	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
-	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
+	// Point sel_pt_s = frptofchar(&t->fr, t->fr.p0); // NOTE: get the selection starting Point
+	// Point sel_pt_e = frptofchar(&t->fr, t->fr.p1); // NOTE: get the selection ending Point
+	// ulong sel_p0 = frcharofpt(&t->fr, sel_pt_s);
+	// ulong sel_p1 = frcharofpt(&t->fr, sel_pt_e);
+	// printf("HERE0: %lu %lu, pt_s.x=%d, pt_s.y=%d, pt_e.x=%d, pt_e.y=%d %lu %lu %d\n", t->fr.p0, t->fr.p1, sel_pt_s.x, sel_pt_s.y, sel_pt_e.x, sel_pt_e.y, sel_p0, sel_p1, t->extension);
+
+	for(nb=0,nc=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
 		_frcklinewrap(&t->fr, &pt, b);
 		if(!t->fr.noredraw && b->nrune >= 0) {
-			_frsyhl(&t->fr, pt, b, t->fr.cols[BACK], t->extension);
+			_frsyhl(&t->fr, pt, b, t->extension);
+			nc += b->nrune+1; // NOTE: +1 for '\n'
 		}
 		pt.x += b->wid;
 	}
