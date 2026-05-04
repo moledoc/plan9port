@@ -1218,6 +1218,106 @@ textframescroll(Text *t, int dl)
 	textsetorigin(t, q0, TRUE);
 }
 
+static
+int
+region(int a, int b)
+{
+	if(a < b)
+		return -1;
+	if(a == b)
+		return 0;
+	return 1;
+}
+
+// NOTE: copied from src/libframe/frselect.c to be able to call tsyhl in the loop
+void
+_local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is down */
+{
+	ulong p0, p1, q;
+	Point mp, pt0, pt1, qt;
+	int reg, b, scrled;
+
+	mp = mc->m.xy;
+	b = mc->m.buttons;
+
+	f->modified = 0;
+	frdrawsel(f, frptofchar(f, f->p0), f->p0, f->p1, 0);
+	p0 = p1 = frcharofpt(f, mp);
+	f->p0 = p0;
+	f->p1 = p1;
+	pt0 = frptofchar(f, p0);
+	pt1 = frptofchar(f, p1);
+	frdrawsel(f, pt0, p0, p1, 1);
+	reg = 0;
+	do{
+		scrled = 0;
+		if(f->scroll){
+			if(mp.y < f->r.min.y){
+				(*f->scroll)(f, -(f->r.min.y-mp.y)/(int)f->font->height-1);
+				p0 = f->p1;
+				p1 = f->p0;
+				scrled = 1;
+			}else if(mp.y > f->r.max.y){
+				(*f->scroll)(f, (mp.y-f->r.max.y)/(int)f->font->height+1);
+				p0 = f->p0;
+				p1 = f->p1;
+				scrled = 1;
+			}
+			if(scrled){
+				if(reg != region(p1, p0))
+					q = p0, p0 = p1, p1 = q;	/* undo the swap that will happen below */
+				pt0 = frptofchar(f, p0);
+				pt1 = frptofchar(f, p1);
+				reg = region(p1, p0);
+			}
+		}
+		q = frcharofpt(f, mp);
+		if(p1 != q){
+			if(reg != region(q, p0)){	/* crossed starting point; reset */
+				if(reg > 0)
+					frdrawsel(f, pt0, p0, p1, 0);
+				else if(reg < 0)
+					frdrawsel(f, pt1, p1, p0, 0);
+				p1 = p0;
+				pt1 = pt0;
+				reg = region(q, p0);
+				if(reg == 0)
+					frdrawsel(f, pt0, p0, p1, 1);
+			}
+			qt = frptofchar(f, q);
+			if(reg > 0){
+				if(q > p1)
+					frdrawsel(f, pt1, p1, q, 1);
+				else if(q < p1)
+					frdrawsel(f, qt, q, p1, 0);
+			}else if(reg < 0){
+				if(q > p1)
+					frdrawsel(f, pt1, p1, q, 0);
+				else
+					frdrawsel(f, qt, q, p1, 1);
+			}
+			p1 = q;
+			pt1 = qt;
+		}
+		f->modified = 0;
+		if(p0 < p1) {
+			f->p0 = p0;
+			f->p1 = p1;
+		}
+		else {
+			f->p0 = p1;
+			f->p1 = p0;
+		}
+		if(scrled)
+			(*f->scroll)(f, 0);
+		flushimage(f->display, 1);
+		if(!scrled)
+			readmouse(mc);
+		mp = mc->m.xy;
+		tsyhl(t);
+	}while(mc->m.buttons == b);
+}
+
 
 void
 textselect(Text *t)
@@ -1240,6 +1340,7 @@ textselect(Text *t)
 	if(q0==q1 && selectq==q0){
 		textdoubleclick(t, &q0, &q1);
 		textsetselect(t, q0, q1);
+		tsyhl(t);
 		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
@@ -1255,7 +1356,7 @@ textselect(Text *t)
 	}
 	if(mouse->buttons == b){
 		t->fr.scroll = framescroll;
-		frselect(&t->fr, mousectl);
+		_local_frselect(&t->fr, mousectl, t);
 		/* horrible botch: while asleep, may have lost selection altogether */
 		if(selectq > t->file->b.nc)
 			selectq = t->org + t->fr.p0;
@@ -1280,7 +1381,6 @@ textselect(Text *t)
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
-	tsyhl(t);
 	flushimage(display, 1);
 	state = None;	/* what we've done; undo when possible */
 	while(mouse->buttons){
@@ -1367,17 +1467,6 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 		while(q0 > t->org+t->fr.nchars)
 			textsetorigin(t, t->org+1, FALSE);
 	}
-}
-
-static
-int
-region(int a, int b)
-{
-	if(a < b)
-		return -1;
-	if(a == b)
-		return 0;
-	return 1;
 }
 
 void

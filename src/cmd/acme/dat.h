@@ -246,6 +246,7 @@ void		textreset(Text*);
 int		textresize(Text*, Rectangle, int);
 void		textscrdraw(Text*);
 void		textscroll(Text*, int);
+void		_local_frselect(Frame*, Mousectl*, Text*); // NOTE: copied from src/libframe/frselect.c
 void		textselect(Text*);
 int		textselect2(Text*, uint*, uint*, Text**);
 int		textselect23(Text*, uint*, uint*, Image*, int);
