@@ -27,7 +27,6 @@ Image 	*syhlcols[SYHL_NCOL];
 // FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
 // FIXME: some keywords get highlighted during typing, but further typing makes it invalid, so it shouldn't be highlighted anymore
-// FIXME: pasting line doesn't highlight the keywords
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -1196,6 +1195,7 @@ textframescroll(Text *t, int dl)
 			textsetselect(t, selectq, t->org+t->fr.p1);
 	}
 	textsetorigin(t, q0, TRUE);
+	tsyhl(t); // NOTE: not yet sure if needed, remove if verified
 }
 
 static
@@ -1361,6 +1361,7 @@ textselect(Text *t)
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
+	tsyhl(t);
 	flushimage(display, 1);
 	state = None;	/* what we've done; undo when possible */
 	while(mouse->buttons){
@@ -1384,11 +1385,11 @@ textselect(Text *t)
 				if(state==Cut && t->what==Body){
 					winundo(t->w, TRUE);
 					textsetselect(t, q0, t->q1);
-					// tsyhl(t);
 					state = None;
 				}else if(state != Paste){
 					paste(t, t, nil, TRUE, FALSE, nil, 0);
 					state = Paste;
+					tsyhl(t);
 				}
 			}
 			textscrdraw(t);
@@ -1447,6 +1448,7 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 		while(q0 > t->org+t->fr.nchars)
 			textsetorigin(t, t->org+1, FALSE);
 	}
+	tsyhl(t);
 }
 
 void
@@ -1538,7 +1540,6 @@ textsetselect(Text *t, uint q0, uint q1)
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
-	tsyhl(t);
 }
 
 /*
@@ -1937,9 +1938,11 @@ textsetorigin(Text *t, uint org, int exact)
 	textfill(t);
 	textscrdraw(t);
 	textsetselect(t, t->q0, t->q1);
-	if(fixup && t->fr.p1 > t->fr.p0)
-		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
 	tsyhl(t);
+	if(fixup && t->fr.p1 > t->fr.p0) {
+		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
+		tsyhl(t);
+	}
 }
 
 void
