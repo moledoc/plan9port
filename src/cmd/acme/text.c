@@ -1240,7 +1240,6 @@ textselect(Text *t)
 	if(q0==q1 && selectq==q0){
 		textdoubleclick(t, &q0, &q1);
 		textsetselect(t, q0, q1);
-		tsyhl(t); // NOTE: double-clicking highlight
 		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
@@ -1257,7 +1256,6 @@ textselect(Text *t)
 	if(mouse->buttons == b){
 		t->fr.scroll = framescroll;
 		frselect(&t->fr, mousectl);
-		tsyhl(t); // NOTE: after letting go mouse-1, syntax highlights selection
 		/* horrible botch: while asleep, may have lost selection altogether */
 		if(selectq > t->file->b.nc)
 			selectq = t->org + t->fr.p0;
@@ -1282,7 +1280,7 @@ textselect(Text *t)
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
-	// tsyhl(t);
+	tsyhl(t);
 	flushimage(display, 1);
 	state = None;	/* what we've done; undo when possible */
 	while(mouse->buttons){
@@ -1297,7 +1295,6 @@ textselect(Text *t)
 				if(state==Paste && t->what==Body){
 					winundo(t->w, TRUE);
 					textsetselect(t, q0, t->q1);
-					// tsyhl(t);
 					state = None;
 				}else if(state != Cut){
 					cut(t, t, nil, TRUE, TRUE, nil, 0);
