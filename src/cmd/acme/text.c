@@ -197,9 +197,6 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 }
 
-
-// FIXME: New segfaults
-// FIXME: flickering when selecting
 void tsyhl(Text *t) {
 
 	if (t->what != Body) {

@@ -18,6 +18,9 @@ int	winid;
 // NOTE: find file extension
 // MAYBE: TODO: use runeeq instead of converting to char*
 int file_ext(Rune *rp, int nc) {
+	if (rp == NULL) {
+		return 0;
+	}
 
 	char *filename = runetobyte(rp, nc);
 
