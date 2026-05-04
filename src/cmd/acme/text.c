@@ -29,6 +29,7 @@ int syntax_highlight_enabled = 1;
 // FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
 // TODO: performance issues on certain actions due to many drawing during - will introduce keyboard shortcut to toggle the highlighting. Possible problem solution - only redraw as textcols[TEXT] when distance(word, keyword) = 1
+// NOTE: distance approach most likely invalidates gperf approach, so need to think/consider if this issue is currently worth it
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -93,7 +94,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 					break;					
 			}
 
-			// TODO: if word 1 char away from keyword, redraw as textcols[TEXT]
+			// TODO: if word 1 char away from keyword, set text=textcols[TEXT]
 
 			// NOTE: we passed end; step back
 			offset--; ptr--;
