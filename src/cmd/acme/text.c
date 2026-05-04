@@ -26,6 +26,7 @@ enum{
 Image 	*syhlcols[SYHL_NCOL];
 
 // FIXME: cursor gets overdrawn when syntax highlighting
+// FIXME: New segfaults
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -1310,11 +1311,11 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		}
 		if(scrled)
 			(*f->scroll)(f, 0);
+		tsyhl(t);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
 		mp = mc->m.xy;
-		tsyhl(t);
 	}while(mc->m.buttons == b);
 }
 
@@ -1558,6 +1559,7 @@ textsetselect(Text *t, uint q0, uint q1)
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
+	tsyhl(t);
 }
 
 /*
