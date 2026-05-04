@@ -1257,7 +1257,7 @@ textselect(Text *t)
 	if(mouse->buttons == b){
 		t->fr.scroll = framescroll;
 		frselect(&t->fr, mousectl);
-		// tsyhl(t);
+		tsyhl(t); // NOTE: after letting go mouse-1, syntax highlights selection
 		/* horrible botch: while asleep, may have lost selection altogether */
 		if(selectq > t->file->b.nc)
 			selectq = t->org + t->fr.p0;
