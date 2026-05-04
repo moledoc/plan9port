@@ -24,11 +24,11 @@ enum{
 };
 
 Image 	*syhlcols[SYHL_NCOL];
-int syntax_highlight_enabled = 0;
+int syntax_highlight_enabled = 1;
 
 // FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
-// TODO: performance issues on certain actions due to many drawing during - will introduce keyboard shortcut to toggle the highlighting.
+// TODO: performance issues on certain actions due to many drawing during - will introduce keyboard shortcut to toggle the highlighting. Possible problem solution - only redraw as textcols[TEXT] when distance(word, keyword) = 1
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -36,7 +36,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 	int buf_len = 0;
 	int offset = 0;
 	int offset_s = offset;
-	int should_draw = 0; // MAYBE: REMOVEME:
+	int should_draw = 0;
 
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
 
@@ -45,7 +45,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 		should_draw = 0;
 		offset_s = offset;
-		Image *text = textcols[TEXT];
+		Image *text = NULL;
 
 		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z') {
 			offset_s = offset;
@@ -63,34 +63,41 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 			if (in_word_set_codetags(buf, buf_len)) {
 				text = syhlcols[SYHL_CODETAG];
+				should_draw = 1;
 			}
 
 			switch (extension) {
 				case EXT_C:
 					if (in_word_set_c(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
 					}
 					break;
 				case EXT_GO:
 					if (in_word_set_go(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
 					}
 					break;
 				case EXT_PYTHON:
 					if (in_word_set_python(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];;
+						should_draw = 1;
 					}
 					break;
 				case EXT_JAVA:
 					if (in_word_set_java(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
 					}
 					break;					
 			}
 
+			// TODO: if word 1 char away from keyword, redraw as textcols[TEXT]
+
 			// NOTE: we passed end; step back
 			offset--; ptr--;
-		
+
 		} else if ('0' <= *ptr && *ptr <= '9') {
 			offset_s = offset;
 			offset++;
@@ -155,9 +162,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			offset++; ptr++;
 		}
 
-		// TODO: now drawing everything, so that deleting/typing further properly renders the syhl. But this is really expesive to do.
-		// previous option was to set a should_draw flag when parsing the types and then check the condition before doing the following (keeping brackets to indicate conditioned actions).
-		{ // condition: should_draw && text != NULL
+		if (should_draw && text != NULL) {
 			memcpy(offset_buf, (char *)b->ptr, offset_s);
 			int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
 			int bufwid_buf = stringnwidth(f->font, buf, buf_len);
