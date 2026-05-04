@@ -161,11 +161,9 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
 			int bufwid_buf = stringnwidth(f->font, buf, buf_len);
 
-
 			ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
 			ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
-			printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, p0, p1, buf);
-
+			// printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, p0, p1, buf);
 
 			if (f->p1 < p0 || p1 < f->p0 || f->p0 == f->p1) { // nothing in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
@@ -1242,7 +1240,7 @@ textselect(Text *t)
 	if(q0==q1 && selectq==q0){
 		textdoubleclick(t, &q0, &q1);
 		textsetselect(t, q0, q1);
-		// tsyhl(t);
+		tsyhl(t); // NOTE: double-clicking highlight
 		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
