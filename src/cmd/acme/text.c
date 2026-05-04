@@ -13,6 +13,7 @@
 #include "dat.h"
 #include "fns.h"
 #include "keywords.h"
+#include <stdio.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -23,10 +24,11 @@ enum{
 };
 
 Image 	*syhlcols[SYHL_NCOL];
+int syntax_highlight_enabled = 0;
 
 // FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
-// FIXME: some keywords get highlighted during typing, but further typing makes it invalid, so it shouldn't be highlighted anymore
+// TODO: performance issues on certain actions due to many drawing during - will introduce keyboard shortcut to toggle the highlighting.
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -34,7 +36,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 	int buf_len = 0;
 	int offset = 0;
 	int offset_s = offset;
-	int should_draw = 0;
+	int should_draw = 0; // MAYBE: REMOVEME:
 
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
 
@@ -43,7 +45,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 		should_draw = 0;
 		offset_s = offset;
-		Image *text = NULL;
+		Image *text = textcols[TEXT];
 
 		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z') {
 			offset_s = offset;
@@ -57,37 +59,33 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 			buf_len = offset-offset_s;
 			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
+			// printf("HERE: %s\n", buf);
 
 			if (in_word_set_codetags(buf, buf_len)) {
 				text = syhlcols[SYHL_CODETAG];
-				should_draw = 1;
 			}
 
 			switch (extension) {
 				case EXT_C:
 					if (in_word_set_c(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
 					}
 					break;
 				case EXT_GO:
 					if (in_word_set_go(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
 					}
 					break;
 				case EXT_PYTHON:
 					if (in_word_set_python(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];;
-						should_draw = 1;
 					}
 					break;
 				case EXT_JAVA:
 					if (in_word_set_java(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
 					}
-					break;
+					break;					
 			}
 
 			// NOTE: we passed end; step back
@@ -157,7 +155,9 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			offset++; ptr++;
 		}
 
-		if (should_draw && text != NULL) {
+		// TODO: now drawing everything, so that deleting/typing further properly renders the syhl. But this is really expesive to do.
+		// previous option was to set a should_draw flag when parsing the types and then check the condition before doing the following (keeping brackets to indicate conditioned actions).
+		{ // condition: should_draw && text != NULL
 			memcpy(offset_buf, (char *)b->ptr, offset_s);
 			int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
 			int bufwid_buf = stringnwidth(f->font, buf, buf_len);
@@ -198,7 +198,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 void tsyhl(Text *t) {
 
-	if (t->what != Body) {
+	if (t->what != Body || !syntax_highlight_enabled) {
 		return;
 	}
 
@@ -263,7 +263,6 @@ textredraw(Text *t, Rectangle r, Font *f, Image *b, int odx)
 		textfill(t);
 		textsetselect(t, t->q0, t->q1);
 	}
-	tsyhl(t);
 }
 
 int
@@ -489,6 +488,7 @@ textload(Text *t, uint q0, char *file, int setqid)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
+			tsyhl(t);
 		}
 		if(t->fr.lastlinefull)
 			break;
@@ -504,7 +504,6 @@ textload(Text *t, uint q0, char *file, int setqid)
 		}
 		textsetselect(u, q0, q0);
 	}
-	tsyhl(t);
 	if(nulls)
 		warning(nil, "%s: NUL bytes elided\n", file);
 	free(d);
@@ -597,6 +596,7 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
 		frinsert(&t->fr, r, r+n, q0-t->org);
+		tsyhl(t);
 	}
 	if(t->w){
 		c = 'i';
@@ -607,7 +607,6 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		else
 			winevent(t->w, "%c%d %d 0 0 \n", c, q0, q0+n, n);
 	}
-	tsyhl(t);
 }
 
 void
@@ -703,6 +702,7 @@ textdelete(Text *t, uint q0, uint q1, int tofile)
 		}else
 			p0 = q0 - t->org;
 		frdelete(&t->fr, p0, p1);
+		tsyhl(t);
 		textfill(t);
 	}
 	if(t->w){
@@ -972,6 +972,10 @@ texttype(Text *t, Rune r)
 	 	typecommit(t);
 		undo(t, nil, nil, FALSE, 0, nil, 0);
 		return;
+	case Kcmd+'.':	/* %-.: toggle syntax highlighting */
+	 	syntax_highlight_enabled = (syntax_highlight_enabled+1)%2;
+		textredraw(t, t->fr.r, t->fr.font, t->fr.b, Dx(t->all)); // FIXME: over-draws the scrollbar, need to tweak the rectangle or redraw scrollbar
+		return;
 
 	Tagdown:
 		/* expand tag to show all text */
@@ -1195,7 +1199,6 @@ textframescroll(Text *t, int dl)
 			textsetselect(t, selectq, t->org+t->fr.p1);
 	}
 	textsetorigin(t, q0, TRUE);
-	tsyhl(t); // NOTE: not yet sure if needed, remove if verified
 }
 
 static
@@ -1320,7 +1323,6 @@ textselect(Text *t)
 	if(q0==q1 && selectq==q0){
 		textdoubleclick(t, &q0, &q1);
 		textsetselect(t, q0, q1);
-		tsyhl(t);
 		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
@@ -1361,7 +1363,6 @@ textselect(Text *t)
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
-	tsyhl(t);
 	flushimage(display, 1);
 	state = None;	/* what we've done; undo when possible */
 	while(mouse->buttons){
@@ -1540,6 +1541,7 @@ textsetselect(Text *t, uint q0, uint q1)
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
+	tsyhl(t);
 }
 
 /*
@@ -1931,6 +1933,7 @@ textsetorigin(Text *t, uint org, int exact)
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
 		frinsert(&t->fr, r, r+n, 0);
+		tsyhl(t);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
@@ -1938,10 +1941,8 @@ textsetorigin(Text *t, uint org, int exact)
 	textfill(t);
 	textscrdraw(t);
 	textsetselect(t, t->q0, t->q1);
-	tsyhl(t);
 	if(fixup && t->fr.p1 > t->fr.p0) {
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
-		tsyhl(t);
 	}
 }
 
