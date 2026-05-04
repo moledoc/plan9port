@@ -13,7 +13,6 @@
 #include "dat.h"
 #include "fns.h"
 #include "keywords.h"
-#include <stdio.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -26,7 +25,9 @@ enum{
 Image 	*syhlcols[SYHL_NCOL];
 
 // FIXME: cursor gets overdrawn when syntax highlighting
-// FIXME: New segfaults
+// FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
+// FIXME: some keywords get highlighted during typing, but further typing makes it invalid, so it shouldn't be highlighted anymore
+// FIXME: pasting line doesn't highlight the keywords
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -164,7 +165,6 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 			ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
 			ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
-			// printf("HERE: [%lu, %lu] %lu %lu %s\n", f->p0, f->p1, p0, p1, buf);
 
 			if (f->p1 < p0 || p1 < f->p0 || f->p0 == f->p1) { // nothing in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
@@ -204,20 +204,13 @@ void tsyhl(Text *t) {
 	}
 
 	Frbox *b;
-	int nb, nc;
+	int nb;
 
 	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
-	// Point sel_pt_s = frptofchar(&t->fr, t->fr.p0); // NOTE: get the selection starting Point
-	// Point sel_pt_e = frptofchar(&t->fr, t->fr.p1); // NOTE: get the selection ending Point
-	// ulong sel_p0 = frcharofpt(&t->fr, sel_pt_s);
-	// ulong sel_p1 = frcharofpt(&t->fr, sel_pt_e);
-	// printf("HERE0: %lu %lu, pt_s.x=%d, pt_s.y=%d, pt_e.x=%d, pt_e.y=%d %lu %lu %d\n", t->fr.p0, t->fr.p1, sel_pt_s.x, sel_pt_s.y, sel_pt_e.x, sel_pt_e.y, sel_p0, sel_p1, t->extension);
-
-	for(nb=0,nc=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
+	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
 		_frcklinewrap(&t->fr, &pt, b);
 		if(!t->fr.noredraw && b->nrune >= 0) {
 			_frsyhl(&t->fr, pt, b, t->extension);
-			nc += b->nrune+1; // NOTE: +1 for '\n'
 		}
 		pt.x += b->wid;
 	}
@@ -497,10 +490,6 @@ textload(Text *t, uint q0, char *file, int setqid)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
-			// tsyhl(t);
-			// printf("HERE3: %d\n", t->extension);
-			// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
-
 		}
 		if(t->fr.lastlinefull)
 			break;
@@ -609,10 +598,6 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
 		frinsert(&t->fr, r, r+n, q0-t->org);
-		// tsyhl(t);
-		// printf("HERE4: %d\n", t->extension);
-		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
-
 	}
 	if(t->w){
 		c = 'i';
@@ -668,9 +653,6 @@ textfill(Text *t)
 		}
 		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
 		tsyhl(t);
-		// Point ptxx = frptofchar(&t->fr, 0); // Get the starting Point of the frame
-		// printf("HERE1: %d x=%d y=%d\n", t->extension, ptxx.x, ptxx.y);
-		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -1948,9 +1930,6 @@ textsetorigin(Text *t, uint org, int exact)
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
 		frinsert(&t->fr, r, r+n, 0);
-		// tsyhl(t);
-		// printf("HERE2: %d\n", t->extension);
-		// stringnbg(t->fr.b, (Point){.x=100, .y=100}, allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed), ZP, t->fr.font, "Hey", 3, t->fr.cols[BACK], ZP);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
