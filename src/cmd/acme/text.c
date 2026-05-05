@@ -86,6 +86,7 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 // FIXME: the problem with keywords manifests also with numbers.
 // NOTE: levensthein distance check is expensive - do only when typing, i.e. inserting/deleting characters.
 // MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
+// MAYBE: FIXME: minor flickering of syhled words which len is small eg numbers, parens, but also codetags for some reason.
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, int typing) {
 
 	static char offset_buf[1024] = {0};
@@ -1351,6 +1352,7 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 	frdrawsel(f, pt0, p0, p1, 1);
 	reg = 0;
 	do{
+		tsyhl(t, 0);
 		scrled = 0;
 		if(f->scroll){
 			if(mp.y < f->r.min.y){
@@ -1411,12 +1413,12 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		}
 		if(scrled)
 			(*f->scroll)(f, 0);
-		tsyhl(t, 0);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
 		mp = mc->m.xy;
 	}while(mc->m.buttons == b);
+	tsyhl(t, 0);
 }
 
 
