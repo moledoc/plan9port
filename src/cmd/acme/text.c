@@ -82,7 +82,6 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 	}
 }
 
-// FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
 // MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
 // NOTE: using levensthein distance based check reduced the tsyhl performance 1 order of magnitude (from microsec to millisec), which is a huge performance loss. BUT it still feels snapy, because it went from ~ <10 microsec to <15 millisec, so it's still in the range of 30-60FPS. But this is something I might want to revisit in the future.
@@ -324,9 +323,15 @@ void tsyhl(Text *t) {
 		}
 		pt.x += b->wid;
 	}
+
+	// NOTE: restore tick, i.e. cursor
+	if (t->fr.p0 == t->fr.p1) {
+		frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 0); // clear
+		frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 1); // restore
+	}
 			clock_t end = clock();
 			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-			// printf("_frsyhl spent: %f sec\n", time_spent);
+			// printf("_frsyhl spent1: %f sec\n", time_spent);
 }
 
 void
