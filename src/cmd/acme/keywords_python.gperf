@@ -166,5 +166,9 @@ file
 Ellipsis
 NotImplemented
 debug
+#
+__init__
+__name__
+__main__
 # }
 %%

@@ -6,15 +6,19 @@ DIRS=mail
 SUFFIXES: .gperf _hash.c $O
 
 # generate keywords headers
-keywords_codetags.h: gen_keywords.py
+keywords_codetags.h: gen_keywords.py keywords_codetags.gperf
 	./gen_keywords.py keywords_codetags.gperf
-keywords_c.h: gen_keywords.py
+
+keywords_c.h: gen_keywords.py keywords_c.gperf
 	./gen_keywords.py keywords_c.gperf
-keywords_go.h: gen_keywords.py
+
+keywords_go.h: gen_keywords.py keywords_go.gperf
 	./gen_keywords.py keywords_go.gperf
-keywords_python.h: gen_keywords.py
+
+keywords_python.h: gen_keywords.py keywords_python.gperf
 	./gen_keywords.py keywords_python.gperf
-keywords_java.h: gen_keywords.py
+
+keywords_java.h: gen_keywords.py keywords_java.gperf
 	./gen_keywords.py keywords_java.gperf
 
 # generate c code with gperf:
