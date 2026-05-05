@@ -83,10 +83,10 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 }
 
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
-// MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
-// NOTE: using levensthein distance based check reduced the tsyhl performance 1 order of magnitude (from microsec to millisec), which is a huge performance loss. BUT it still feels snapy, because it went from ~ <10 microsec to <15 millisec, so it's still in the range of 30-60FPS. But this is something I might want to revisit in the future.
 // FIXME: the problem with keywords manifests also with numbers.
-void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
+// NOTE: levensthein distance check is expensive - do only when typing, i.e. inserting/deleting characters.
+// MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
+void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, int typing) {
 
 	static char offset_buf[1024] = {0};
 	static char buf[128] = {0};
@@ -121,7 +121,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			if (in_word_set_codetags(buf, buf_len)) {
 				text = syhlcols[SYHL_CODETAG];
 				should_draw = 1;
-			} else {
+			} else if (typing) {
 				// lev_dist_1((char **)keywords_codetags, sizeof(keywords_codetags)/sizeof(keywords_codetags[0]), buf, &text, &should_draw);
 				for (int ii=0; ii<keywords_codetags_count; ii++){
 					int lev = levenshtein(keywords_codetags[ii], buf);
@@ -138,7 +138,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 					if (in_word_set_c(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
-					} else {
+					} else if (typing) {
 						// lev_dist_1((char **)keywords_c, sizeof(keywords_c)/sizeof(keywords_c[0]), buf, &text, &should_draw);
 						for (int ii=0; ii<keywords_c_count; ii++){
 							int lev = levenshtein(keywords_c[ii], buf);
@@ -154,7 +154,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 					if (in_word_set_go(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
-					} else {
+					} else if (typing) {
 						// lev_dist_1((char **)keywords_go, sizeof(keywords_go)/sizeof(keywords_go[0]), buf, &text, &should_draw);
 						for (int ii=0; ii<keywords_go_count; ii++){
 							int lev = levenshtein(keywords_go[ii], buf);
@@ -170,7 +170,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 					if (in_word_set_python(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
-					} else {
+					} else if (typing) {
 						// lev_dist_1((char **)keywords_python, sizeof(keywords_python)/sizeof(keywords_python[0]), buf, &text, &should_draw);
 						for (int ii=0; ii<keywords_python_count; ii++){
 							int lev = levenshtein(keywords_python[ii], buf);
@@ -186,7 +186,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 					if (in_word_set_java(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
-					} else {
+					} else if (typing) {
 						// lev_dist_1((char **)keywords_java, sizeof(keywords_java)/sizeof(keywords_java[0]), buf, &text, &should_draw);
 						for (int ii=0; ii<keywords_java_count; ii++){
 							int lev = levenshtein(keywords_java[ii], buf);
@@ -305,7 +305,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 	}
 }
 
-void tsyhl(Text *t) {
+void tsyhl(Text *t, int typing) {
 			clock_t begin = clock();
 
 	if (t->what != Body || !syntax_highlight_enabled) {
@@ -319,7 +319,7 @@ void tsyhl(Text *t) {
 	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
 		_frcklinewrap(&t->fr, &pt, b);
 		if(!t->fr.noredraw && b->nrune >= 0) {
-			_frsyhl(&t->fr, pt, b, t->extension);
+			_frsyhl(&t->fr, pt, b, t->extension, typing);
 		}
 		pt.x += b->wid;
 	}
@@ -606,7 +606,7 @@ textload(Text *t, uint q0, char *file, int setqid)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
-			tsyhl(t);
+			tsyhl(t, 0);
 		}
 		if(t->fr.lastlinefull)
 			break;
@@ -714,7 +714,7 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
 		frinsert(&t->fr, r, r+n, q0-t->org);
-		tsyhl(t);
+		tsyhl(t, 1);
 	}
 	if(t->w){
 		c = 'i';
@@ -768,7 +768,7 @@ textfill(Text *t)
 			}
 		}
 		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
-		tsyhl(t);
+		tsyhl(t, 0);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -820,7 +820,7 @@ textdelete(Text *t, uint q0, uint q1, int tofile)
 		}else
 			p0 = q0 - t->org;
 		frdelete(&t->fr, p0, p1);
-		tsyhl(t);
+		tsyhl(t, 1);
 		textfill(t);
 	}
 	if(t->w){
@@ -1411,7 +1411,7 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		}
 		if(scrled)
 			(*f->scroll)(f, 0);
-		tsyhl(t);
+		tsyhl(t, 0);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
@@ -1508,7 +1508,7 @@ textselect(Text *t)
 				}else if(state != Paste){
 					paste(t, t, nil, TRUE, FALSE, nil, 0);
 					state = Paste;
-					tsyhl(t);
+					tsyhl(t, 0);
 				}
 			}
 			textscrdraw(t);
@@ -1567,7 +1567,7 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 		while(q0 > t->org+t->fr.nchars)
 			textsetorigin(t, t->org+1, FALSE);
 	}
-	tsyhl(t);
+	tsyhl(t, 0);
 }
 
 void
@@ -1659,7 +1659,7 @@ textsetselect(Text *t, uint q0, uint q1)
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
-	tsyhl(t);
+	tsyhl(t, 0);
 }
 
 /*
@@ -1769,7 +1769,7 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 
 	while(mousectl->m.buttons)
 		readmouse(mousectl);
-	tsyhl(t);
+	tsyhl(t, 0);
 	return buts;
 }
 
@@ -2052,7 +2052,7 @@ textsetorigin(Text *t, uint org, int exact)
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
 		frinsert(&t->fr, r, r+n, 0);
-		tsyhl(t);
+		tsyhl(t, 0);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
