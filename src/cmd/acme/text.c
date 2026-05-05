@@ -1762,6 +1762,7 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 
 	while(mousectl->m.buttons)
 		readmouse(mousectl);
+	tsyhl(t);
 	return buts;
 }
 
