@@ -82,11 +82,10 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 	}
 }
 
-// FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
-// FIXME: the problem with keywords manifests also with numbers.
+// FIXME: flickering of quotes/parens/codetags when exiting selection
+// MAYBE: FIX: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
 // NOTE: levensthein distance check is expensive - do only when typing, i.e. inserting/deleting characters.
-// MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
-// MAYBE: FIXME: minor flickering of syhled words which len is small eg numbers, parens, but also codetags for some reason.
+// KNOWN: the problem of not clearing syhl is also present for numbers and escape - that's because we don't redraw the chars after insertion/deletion. To do that, we'd need to redraw every char/word essentially which is bit too expensive. So this is left as known issue for now.
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, int typing) {
 
 	static char offset_buf[1024] = {0};
@@ -253,8 +252,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, int typing) {
 			buf[0] = *ptr;
 			buf_len = 1;
 			text = syhlcols[SYHL_PAREN];
-		} else if (*ptr == '/' && (*(ptr+1) == '/' || *(ptr+1) == '*') || 
-				(*ptr == '*' && *(ptr+1) == '/')) {
+		} else if ((*ptr == '/' && (offset+1 < b->nrune && *(ptr+1) == '/' || *(ptr+1) == '*') || (offset+1 < b->nrune && *ptr == '*' && *(ptr+1) == '/')) && (extension == EXT_C || extension == EXT_GO || extension == EXT_JAVA)) {
 			offset_s = offset;
 			buf_len = 1;
 			buf[0] = *ptr;
@@ -263,6 +261,14 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, int typing) {
 				buf_len += 1;
 				should_draw = 1;
 			}
+			text = syhlcols[SYHL_COMMENT];
+			// NOTE: step over comment end
+			offset++; ptr++;
+		} else if (extension == EXT_PYTHON && *ptr == '#') {
+			offset_s = offset;
+			buf_len = 1;
+			buf[0] = *ptr;
+			should_draw = 1;
 			text = syhlcols[SYHL_COMMENT];
 			// NOTE: step over comment end
 			offset++; ptr++;
