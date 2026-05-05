@@ -2,10 +2,14 @@
 #define KEYWORDS_H
 
 #include <stddef.h>
+#include "keywords_codetags.h"
+#include "keywords_c.h"
+#include "keywords_go.h"
+#include "keywords_python.h"
+#include "keywords_java.h"
 
 struct keyword {
     const char *name;
-    int token;
 };
 
 const struct keyword *in_word_set_codetags(const char *str, size_t len);

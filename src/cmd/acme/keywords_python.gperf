@@ -2,7 +2,7 @@
 #include <string.h>
 %}
 
-struct keyword_py { const char *name; };
+struct keyword_python { const char *name; };
 
 %%
 # {

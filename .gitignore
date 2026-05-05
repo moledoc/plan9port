@@ -3,6 +3,7 @@
 *.o
 *.orig
 *_hash.c
+keywords_*.h
 LOCAL.config
 bin/"
 bin/""

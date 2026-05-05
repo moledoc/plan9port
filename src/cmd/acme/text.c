@@ -14,6 +14,7 @@
 #include "fns.h"
 #include "keywords.h"
 #include <stdio.h> // REMOVEME:
+#include <time.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -26,10 +27,64 @@ enum{
 Image 	*syhlcols[SYHL_NCOL];
 int syntax_highlight_enabled = 1;
 
+int levenshtein(const char *s1, const char *s2) {
+    int len1 = strlen(s1);
+    int len2 = strlen(s2);
+
+    // allocate DP table
+    int **dp = (int **)malloc((len1 + 1) * sizeof(int *));
+    for (int i = 0; i <= len1; i++) {
+        dp[i] = (int *)malloc((len2 + 1) * sizeof(int));
+    }
+
+    // base cases
+    for (int i = 0; i <= len1; i++) dp[i][0] = i;
+    for (int j = 0; j <= len2; j++) dp[0][j] = j;
+
+    // fill table
+    for (int i = 1; i <= len1; i++) {
+        for (int j = 1; j <= len2; j++) {
+            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+
+            dp[i][j] = min(
+                dp[i - 1][j] + 1,      // deletion
+                dp[i][j - 1] + 1      // insertion
+            );
+            dp[i][j] = min(
+                dp[i][j],
+                dp[i - 1][j - 1] + cost // substitution
+            );
+        }
+    }
+
+    int result = dp[len1][len2];
+
+    // free memory
+    for (int i = 0; i <= len1; i++) {
+        free(dp[i]);
+    }
+    free(dp);
+
+    return result;
+}
+
+void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_draw) {
+	if (kws == NULL || kws_len == 0 || text == NULL || should_draw == NULL) {
+		return;
+	}
+	for (int ii=0; ii<kws_len; ii++){
+		int lev = levenshtein(kws[ii], buf);
+		if (lev == 1) {
+			*text = textcols[TEXT];
+			*should_draw = 1;
+			break;
+		}
+	}
+}
+
 // FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
-// TODO: performance issues on certain actions due to many drawing during - will introduce keyboard shortcut to toggle the highlighting. Possible problem solution - only redraw as textcols[TEXT] when distance(word, keyword) = 1
-// NOTE: distance approach most likely invalidates gperf approach, so need to think/consider if this issue is currently worth it
+// MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
@@ -39,7 +94,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 	int offset_s = offset;
 	int should_draw = 0;
 
-	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++)  {
+	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++) {
 
 		memset(offset_buf, 0, offset);
 		memset(buf, 0, sizeof(buf));
@@ -48,7 +103,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 		offset_s = offset;
 		Image *text = NULL;
 
-		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z') {
+		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z' || *ptr == '_') {
 			offset_s = offset;
 			offset++;
 			ptr++;
@@ -65,6 +120,16 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			if (in_word_set_codetags(buf, buf_len)) {
 				text = syhlcols[SYHL_CODETAG];
 				should_draw = 1;
+			} else {
+				// lev_dist_1((char **)keywords_codetags, sizeof(keywords_codetags)/sizeof(keywords_codetags[0]), buf, &text, &should_draw);
+				for (int ii=0; ii<keywords_codetags_count; ii++){
+					int lev = levenshtein(keywords_codetags[ii], buf);
+					if (lev == 1) {
+						text = textcols[TEXT];
+						should_draw = 1;
+						break;
+					}
+				}
 			}
 
 			switch (extension) {
@@ -72,29 +137,67 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 					if (in_word_set_c(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
+					} else {
+						// lev_dist_1((char **)keywords_c, sizeof(keywords_c)/sizeof(keywords_c[0]), buf, &text, &should_draw);
+						for (int ii=0; ii<keywords_c_count; ii++){
+							int lev = levenshtein(keywords_c[ii], buf);
+							if (lev == 1) {
+								text = textcols[TEXT];
+								should_draw = 1;
+								break;
+							}
+						}
 					}
 					break;
 				case EXT_GO:
 					if (in_word_set_go(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
+					} else {
+						// lev_dist_1((char **)keywords_go, sizeof(keywords_go)/sizeof(keywords_go[0]), buf, &text, &should_draw);
+						for (int ii=0; ii<keywords_go_count; ii++){
+							int lev = levenshtein(keywords_go[ii], buf);
+							if (lev == 1) {
+								text = textcols[TEXT];
+								should_draw = 1;
+								break;
+							}
+						}
 					}
 					break;
 				case EXT_PYTHON:
 					if (in_word_set_python(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];;
+						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
+					} else {
+						// lev_dist_1((char **)keywords_python, sizeof(keywords_python)/sizeof(keywords_python[0]), buf, &text, &should_draw);
+						for (int ii=0; ii<keywords_python_count; ii++){
+							int lev = levenshtein(keywords_python[ii], buf);
+							if (lev == 1) {
+								text = textcols[TEXT];
+								should_draw = 1;
+								break;
+							}
+						}
 					}
 					break;
 				case EXT_JAVA:
 					if (in_word_set_java(buf, buf_len)) {
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
+					} else {
+						// lev_dist_1((char **)keywords_java, sizeof(keywords_java)/sizeof(keywords_java[0]), buf, &text, &should_draw);
+						for (int ii=0; ii<keywords_java_count; ii++){
+							int lev = levenshtein(keywords_java[ii], buf);
+							if (lev == 1) {
+								text = textcols[TEXT];
+								should_draw = 1;
+								break;
+							}
+						}
 					}
 					break;					
 			}
-
-			// TODO: if word 1 char away from keyword, set text=textcols[TEXT]
 
 			// NOTE: we passed end; step back
 			offset--; ptr--;
@@ -199,10 +302,10 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
 		}
 	}
-
 }
 
 void tsyhl(Text *t) {
+			clock_t begin = clock();
 
 	if (t->what != Body || !syntax_highlight_enabled) {
 		return;
@@ -219,8 +322,10 @@ void tsyhl(Text *t) {
 		}
 		pt.x += b->wid;
 	}
+			clock_t end = clock();
+			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+			// printf("_frsyhl spent: %f sec\n", time_spent);
 }
-
 
 void
 textinit(Text *t, File *f, Rectangle r, Reffont *rf, Image *cols[NCOL])
