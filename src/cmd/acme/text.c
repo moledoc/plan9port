@@ -85,6 +85,8 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 // FIXME: cursor gets overdrawn when syntax highlighting
 // FIXME: flickering, but only certain situations; reproduce: single-line continuous selection or block continous selection (i.e. clicking), but block doesn't always flicker; single line highight flickers more consistently
 // MAYBE: FIXME: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
+// NOTE: using levensthein distance based check reduced the tsyhl performance 1 order of magnitude (from microsec to millisec), which is a huge performance loss. BUT it still feels snapy, because it went from ~ <10 microsec to <15 millisec, so it's still in the range of 30-60FPS. But this is something I might want to revisit in the future.
+// FIXME: the problem with keywords manifests also with numbers.
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension) {
 
 	static char offset_buf[1024] = {0};
