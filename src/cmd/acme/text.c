@@ -82,10 +82,11 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 	}
 }
 
-// FIXME: flickering of quotes/parens/codetags when exiting selection
-// MAYBE: FIX: after cancelling command or look mouse, then before the mouse button is released, there's no syhl
+// FIXME: clicking around doesn't properly clean previous ticks.
 // NOTE: levensthein distance check is expensive - do only when typing, i.e. inserting/deleting characters.
 // KNOWN: the problem of not clearing syhl is also present for numbers and escape - that's because we don't redraw the chars after insertion/deletion. To do that, we'd need to redraw every char/word essentially which is bit too expensive. So this is left as known issue for now.
+// KNOWN: execute `Edit =` twice - on the second time, the first line will be unselected, but no syhl on col number happens.
+
 void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action, uint start_sel, uint end_sel) {
 
 	static char offset_buf[1024] = {0};
@@ -118,7 +119,6 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 
 			buf_len = offset-offset_s;
 			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
-			// printf("HERE: %s\n", buf);
 
 			if (in_word_set_codetags(buf, buf_len)) {
 				text = syhlcols[SYHL_CODETAG];
@@ -330,6 +330,9 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 	uint start_sel = t->fr.p0;
 	uint end_sel = t->fr.p1;
 
+	// NOTE: clear tick/cursor
+	frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 0);
+
 	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
 	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
 		_frcklinewrap(&t->fr, &pt, b);
@@ -354,10 +357,10 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 	}
 
 	// NOTE: restore tick, i.e. cursor
-	if (start_sel == end_sel) {
-		frtick(&t->fr, frptofchar(&t->fr, start_sel), 0); // clear
-		frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 1); // restore
+	if (t->fr.p0 == t->fr.p1) {
+		frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 1);
 	}
+
 			clock_t end = clock();
 			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
 			// printf("_frsyhl spent1: %f sec\n", time_spent);
@@ -1730,8 +1733,9 @@ enum {
 	MINMOVE = 4
 };
 
-// MAYBE: FIXME: when there is selection and mousebtn2 or mousebtn3 is selected such that it overlaps with selection, then restoring the highlighted syhl is not always correct. Will fix if it turns out to occur and annoy during usage.
+// KNOWN: when there is selection and mousebtn2 or mousebtn3 is selected such that it overlaps with selection, then restoring the highlighted syhl is not always correct. Will fix if it turns out to occur and annoy during usage. This happens when cancelling btn2 and btn3 or when going through with btn3 execution. Again, the text under it needs to be selected for this to happen.
 uint
+
 xselect(Text *t, Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
 {
 	uint p0, p1, q, tmp;
