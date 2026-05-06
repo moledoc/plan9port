@@ -1618,16 +1618,18 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 }
 
 void
-selrestore(Frame *f, Point pt0, uint p0, uint p1)
+selrestore(Text *t, Frame *f, Point pt0, uint p0, uint p1)
 {
 	if(p1<=f->p0 || p0>=f->p1){
 		/* no overlap */
 		frdrawsel0(f, pt0, p0, p1, f->cols[BACK], f->cols[TEXT]);
+		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
 		return;
 	}
 	if(p0>=f->p0 && p1<=f->p1){
 		/* entirely inside */
 		frdrawsel0(f, pt0, p0, p1, f->cols[HIGH], f->cols[HTEXT]);
+		tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 		return;
 	}
 
@@ -1636,16 +1638,19 @@ selrestore(Frame *f, Point pt0, uint p0, uint p1)
 	/* before selection */
 	if(p0 < f->p0){
 		frdrawsel0(f, pt0, p0, f->p0, f->cols[BACK], f->cols[TEXT]);
+		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, f->p0);
 		p0 = f->p0;
 		pt0 = frptofchar(f, p0);
 	}
 	/* after selection */
 	if(p1 > f->p1){
 		frdrawsel0(f, frptofchar(f, f->p1), f->p1, p1, f->cols[BACK], f->cols[TEXT]);
+		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p1, p1);
 		p1 = f->p1;
 	}
 	/* inside selection */
 	frdrawsel0(f, pt0, p0, p1, f->cols[HIGH], f->cols[HTEXT]);
+	tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 }
 
 void
@@ -1725,9 +1730,9 @@ enum {
 	MINMOVE = 4
 };
 
-// NOTE: don't add tsyhl to xselect, because we don't want to syhl mousebtn 2 and 3 highlighting
+// MAYBE: FIXME: when there is selection and mousebtn2 or mousebtn3 is selected such that it overlaps with selection, then restoring the highlighted syhl is not always correct. Will fix if it turns out to occur and annoy during usage.
 uint
-xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
+xselect(Text *t, Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
 {
 	uint p0, p1, q, tmp;
 	ulong msec;
@@ -1753,9 +1758,9 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 				frtick(f, pt0, 0);
 			if(reg != region(q, p0)){	/* crossed starting point; reset */
 				if(reg > 0)
-					selrestore(f, pt0, p0, p1);
+					selrestore(t, f, pt0, p0, p1);
 				else if(reg < 0)
-					selrestore(f, pt1, p1, p0);
+					selrestore(t, f, pt1, p1, p0);
 				p1 = p0;
 				pt1 = pt0;
 				reg = region(q, p0);
@@ -1768,10 +1773,10 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 					frdrawsel0(f, pt1, p1, q, col, display->white);
 
 				else if(q < p1)
-					selrestore(f, qt, q, p1);
+					selrestore(t, f, qt, q, p1);
 			}else if(reg < 0){
 				if(q > p1)
-					selrestore(f, pt1, p1, q);
+					selrestore(t, f, pt1, p1, q);
 				else
 					frdrawsel0(f, qt, q, p1, col, display->white);
 			}
@@ -1787,9 +1792,9 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 	&& abs(mp.x-mc->m.xy.x)<MINMOVE
 	&& abs(mp.y-mc->m.xy.y)<MINMOVE) {
 		if(reg > 0)
-			selrestore(f, pt0, p0, p1);
+			selrestore(t, f, pt0, p0, p1);
 		else if(reg < 0)
-			selrestore(f, pt1, p1, p0);
+			selrestore(t, f, pt1, p1, p0);
 		p1 = p0;
 	}
 	if(p1 < p0){
@@ -1800,7 +1805,7 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 	pt0 = frptofchar(f, p0);
 	if(p0 == p1)
 		frtick(f, pt0, 0);
-	selrestore(f, pt0, p0, p1);
+	selrestore(t, f, pt0, p0, p1);
 	/* restore tick */
 	if(f->p0 == f->p1)
 		frtick(f, frptofchar(f, f->p0), 1);
@@ -1815,16 +1820,20 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 	uint p0, p1;
 	int buts;
 
-	p0 = xselect(&t->fr, mousectl, high, &p1);
+	p0 = xselect(t, &t->fr, mousectl, high, &p1);
 	buts = mousectl->m.buttons;
 	if((buts & mask) == 0){
 		*q0 = p0+t->org;
 		*q1 = p1+t->org;
 	}
 
-	while(mousectl->m.buttons)
+	int once = 1;
+	while(mousectl->m.buttons) {
 		readmouse(mousectl);
-	tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+		if (!once) {
+			tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
+		}
+	}
 	return buts;
 }
 
