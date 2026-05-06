@@ -1419,8 +1419,7 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		if(scrled)
 			(*f->scroll)(f, 0);
 		tsyhl(t, 0);
-		// flushimage(f->display, 0);
-		// flushimage(f->display, 1);
+		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
 		mp = mc->m.xy;
@@ -1450,8 +1449,7 @@ textselect(Text *t)
 	if(q0==q1 && selectq==q0){
 		textdoubleclick(t, &q0, &q1);
 		textsetselect(t, q0, q1);
-		// flushimage(display, 0);
-		// flushimage(display, 1);
+		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
 		/* stay here until something interesting happens */
@@ -1491,7 +1489,7 @@ textselect(Text *t)
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
-	// flushimage(display, 1);
+	flushimage(display, 1);
 	state = None;	/* what we've done; undo when possible */
 	while(mouse->buttons){
 		mouse->msec = 0;
@@ -1525,8 +1523,7 @@ textselect(Text *t)
 			clearmouse();
 		}
 		tsyhl(t, 0);
-		// flushimage(display, 0);
-		// flushimage(display, 1);
+		flushimage(display, 1);
 		while(mouse->buttons == b)
 			readmouse(mousectl);
 		clicktext = nil;
