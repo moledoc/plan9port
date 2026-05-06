@@ -95,7 +95,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 	int offset_s = offset;
 	int should_draw = 0;
 
-	printf("HERE: %s %d\n", (char *)b->ptr, action);
+	// printf("HERE: %s %d\n", (char *)b->ptr, action);
 
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++) {
 
@@ -285,9 +285,9 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 			ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
 			ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
 
-			printf("---- %lu %lu vs %u %u\n", p0, p1, end_sel, start_sel);
+			// printf("---- %lu %lu vs %u %u %s\n", p0, p1, start_sel, end_sel, buf);
 
-			if (start_sel < p0 || p1 < end_sel || start_sel == end_sel) { // nothing in selection
+			if (action == SYHL_ACTION_CLEAR_SELECTION || end_sel < p0 || p1 < start_sel || start_sel == end_sel) { // nothing in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 				continue;
 			} else if (start_sel <= p0 && p1 <= end_sel) { // everything in selection
@@ -356,11 +356,11 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 	// NOTE: restore tick, i.e. cursor
 	if (start_sel == end_sel) {
 		frtick(&t->fr, frptofchar(&t->fr, start_sel), 0); // clear
-		frtick(&t->fr, frptofchar(&t->fr, start_sel), 1); // restore
+		frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 1); // restore
 	}
 			clock_t end = clock();
 			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-			printf("_frsyhl spent1: %f sec\n", time_spent);
+			// printf("_frsyhl spent1: %f sec\n", time_spent);
 }
 
 void
@@ -1375,14 +1375,13 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 
 	f->modified = 0;
 	frdrawsel(f, frptofchar(f, f->p0), f->p0, f->p1, 0);
-	tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
+	tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p0, f->p1);
 	p0 = p1 = frcharofpt(f, mp);
 	f->p0 = p0;
 	f->p1 = p1;
 	pt0 = frptofchar(f, p0);
 	pt1 = frptofchar(f, p1);
 	frdrawsel(f, pt0, p0, p1, 1);
-	tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 	reg = 0;
 	do{
 		scrled = 0;
@@ -1411,38 +1410,38 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 			if(reg != region(q, p0)){	/* crossed starting point; reset */
 				if(reg > 0) {
 					frdrawsel(f, pt0, p0, p1, 0);
-					tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
 				}
 				else if(reg < 0) {
 					frdrawsel(f, pt1, p1, p0, 0);
-					tsyhl(t, SYHL_ACTION_SELECTING, p1, p0);
+					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, p0);
 				}
 				p1 = p0;
 				pt1 = pt0;
 				reg = region(q, p0);
 				if(reg == 0) {
 					frdrawsel(f, pt0, p0, p1, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+					// tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 				}
 			}
 			qt = frptofchar(f, q);
 			if(reg > 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
+					// tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
 				}
 				else if(q < p1) {
 					frdrawsel(f, qt, q, p1, 0);
-					tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
+					// tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
 				}
 			}else if(reg < 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 0);
-					tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
+					// tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
 				}
 				else {
 					frdrawsel(f, qt, q, p1, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
+					// tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
 				}
 			}
 			p1 = q;
@@ -1459,6 +1458,7 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		}
 		if(scrled)
 			(*f->scroll)(f, 0);
+		tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
@@ -1683,10 +1683,10 @@ textsetselect(Text *t, uint q0, uint q1)
 	if(t->fr.p1<=p0 || p1<=t->fr.p0 || p0==p1 || t->fr.p1==t->fr.p0){
 		/* no overlap or too easy to bother trying */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p0), t->fr.p0, t->fr.p1, 0);
-		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
+		// tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
 		if(p0 != p1 || ticked) {
 			frdrawsel(&t->fr, frptofchar(&t->fr, p0), p0, p1, 1);
-			tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+			// tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 		}
 		goto Return;
 	}
@@ -1694,25 +1694,26 @@ textsetselect(Text *t, uint q0, uint q1)
 	if(p0 < t->fr.p0){
 		/* extend selection backwards */
 		frdrawsel(&t->fr, frptofchar(&t->fr, p0), p0, t->fr.p0, 1);
-		tsyhl(t, SYHL_ACTION_SELECTING, p0, t->fr.p0);
+		// tsyhl(t, SYHL_ACTION_SELECTING, p0, t->fr.p0);
 	}else if(p0 > t->fr.p0){
 		/* trim first part of selection */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p0), t->fr.p0, p0, 0);
-		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, p0);
+		// tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, p0);
 	}
 	if(p1 > t->fr.p1){
 		/* extend selection forwards */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1), t->fr.p1, p1, 1);
-		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p1, p1);
+		// tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p1, p1);
 	}else if(p1 < t->fr.p1){
 		/* trim last part of selection */
 		frdrawsel(&t->fr, frptofchar(&t->fr, p1), p1, t->fr.p1, 0);
-		tsyhl(t, SYHL_ACTION_SELECTING, p1, t->fr.p1);
+		// tsyhl(t, SYHL_ACTION_SELECTING, p1, t->fr.p1);
 	}
 
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
+	tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
 }
 
 /*
@@ -1824,7 +1825,6 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 	while(mousectl->m.buttons)
 		readmouse(mousectl);
 	tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
-	// tsyhl(t, 0);
 	return buts;
 }
 
@@ -2118,7 +2118,7 @@ textsetorigin(Text *t, uint org, int exact)
 	textsetselect(t, t->q0, t->q1);
 	if(fixup && t->fr.p1 > t->fr.p0) {
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
-		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p1-1, t->fr.p1);
+		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
 	}
 }
 

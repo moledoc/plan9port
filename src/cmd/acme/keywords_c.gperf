@@ -71,6 +71,7 @@ uint32_t
 uint64_t
 intptr_t
 uintptr_t
+ulong
 FILE
 fpos_t
 time_t
