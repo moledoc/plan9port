@@ -82,7 +82,7 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 	}
 }
 
-// FIXME: moving with arrow keys doesn't properly redraw tick/cursor
+// FIXME: moving with arrow keys doesn't properly redraw tick/cursor. Backspace to prev line also doesn't redraw the cursor.
 // NOTE: levensthein distance check is expensive - do only when typing, i.e. inserting/deleting characters.
 // KNOWN: the problem of not clearing syhl is also present for numbers and escape - that's because we don't redraw the chars after insertion/deletion. To do that, we'd need to redraw every char/word essentially which is bit too expensive. So this is left as known issue for now.
 // KNOWN: execute `Edit =` twice - on the second time, the first line will be unselected, but no syhl on col number happens.
@@ -355,6 +355,10 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 		}
 		Continue:
 		pt.x += b->wid;
+	}
+
+	if (0 && t->fr.p0 == t->fr.p1) {
+		// frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 1);
 	}
 
 			clock_t end = clock();
