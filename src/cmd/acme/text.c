@@ -291,7 +291,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 			// printf("---- %lu %lu vs %u %u %d %s\n", p0, p1, start_sel, end_sel, action, buf);
 				// NOTE: restore tick if syhl
-				// FIXME: arrow keys doesn't work propely atm
+				// FIXME: artifacts on the syhl edges from tick
 				if (f->ticked && f->p0  == f->p1 && p0 <= f->p0 && f->p0 <= p1) {
 					frtick(f, frptofchar(f, f->p0), 0); // clean
 					frtick(f, frptofchar(f, f->p0), 1); // redraw
@@ -1603,7 +1603,7 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 	}
 	if(tsd) {
 		textscrdraw(t);
-		tsyhl(t, SYHL_ACTION_TYPING, q0, q1);
+		tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q1-t->org);
 	} else{
 		if(t->w->nopen[QWevent] > 0)
 			nl = 3*t->fr.maxlines/4;
