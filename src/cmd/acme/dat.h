@@ -585,6 +585,8 @@ extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
 extern Image		*syhlcols[SYHL_NCOL];
+extern Image		*cleantick;
+extern Image		*cleantickback;
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;

@@ -25,6 +25,10 @@ enum{
 };
 
 Image 	*syhlcols[SYHL_NCOL];
+Image	*cleantick;
+Image	*cleantickback;
+Point	tickpt = {0};
+uint	tickp0 = 0;
 int syntax_highlight_enabled = 1;
 
 int levenshtein(const char *s1, const char *s2) {
@@ -288,14 +292,28 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 			// printf("---- %lu %lu vs %u %u %d %s\n", p0, p1, start_sel, end_sel, action, buf);
 
 			if (action == SYHL_ACTION_CLEAR_SELECTION || end_sel < p0 || p1 < start_sel || start_sel == end_sel) { // nothing in selection
+
+				// NOTE: clean syhl sides if tick is on the edge char of the syhl or one char from it
+				if (f->p0 == f->p1 && (p0 <= f->p0 && f->p0 <= p1 || p0-1 == f->p0 || p1+1 == f->p0)) {
+					Point cleanpt = (Point){.x=pt.x+bufwid_offset, .y=pt.y};
+					cleanpt.x -= f->tickscale;
+					Rectangle r = Rect(cleanpt.x, cleanpt.y, cleanpt.x+FRTICKW*f->tickscale, cleanpt.y+f->font->height);
+					draw(f->b, r, cleantickback, nil, ZP); // clean left side
+
+					cleanpt.x += bufwid_buf;
+					r = Rect(cleanpt.x, cleanpt.y, cleanpt.x+FRTICKW*f->tickscale, cleanpt.y+f->font->height);
+					draw(f->b, r, cleantickback, nil, ZP); // clean right side
+				}
+
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
-			// printf("---- %lu %lu vs %u %u %d %s\n", p0, p1, start_sel, end_sel, action, buf);
+
 				// NOTE: restore tick if syhl
-				// FIXME: artifacts on the syhl edges from tick
-				if (f->ticked && f->p0  == f->p1 && p0 <= f->p0 && f->p0 <= p1) {
-					frtick(f, frptofchar(f, f->p0), 0); // clean
+				// KNOWN: MAYBE: FIX: equality for some reason left drawing artifacts on the syhl edges, hence cleaning above
+				if (f->p0 == f->p1 && p0 <= f->p0 && f->p0 <= p1 && action != SYHL_ACTION_CLEAR_SELECTION) {
+					f->ticked = 0; // mark unticked
 					frtick(f, frptofchar(f, f->p0), 1); // redraw
 				}
+
 				continue;
 			} else if (start_sel <= p0 && p1 <= end_sel) { // everything in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
