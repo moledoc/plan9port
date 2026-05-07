@@ -289,6 +289,13 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 
 			if (action == SYHL_ACTION_CLEAR_SELECTION || end_sel < p0 || p1 < start_sel || start_sel == end_sel) { // nothing in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
+			// printf("---- %lu %lu vs %u %u %d %s\n", p0, p1, start_sel, end_sel, action, buf);
+				// NOTE: restore tick if syhl
+				// FIXME: arrow keys doesn't work propely atm
+				if (f->ticked && f->p0  == f->p1 && p0 <= f->p0 && f->p0 <= p1) {
+					frtick(f, frptofchar(f, f->p0), 0); // clean
+					frtick(f, frptofchar(f, f->p0), 1); // redraw
+				}
 				continue;
 			} else if (start_sel <= p0 && p1 <= end_sel) { // everything in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
@@ -330,10 +337,6 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 	uint start_sel = t->fr.p0;
 	uint end_sel = t->fr.p1;
 
-	// NOTE: set tick/cursor as unticked, so it can be drawn later.
-	// KNOWN: tick not drawn in tsyhl, won't properly be cleaned up. Luckily tick is properly drawn outside later.
-	frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 0);
-
 	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
 	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
 		_frcklinewrap(&t->fr, &pt, b);
@@ -355,10 +358,6 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 		}
 		Continue:
 		pt.x += b->wid;
-	}
-
-	if (0 && t->fr.p0 == t->fr.p1) {
-		// frtick(&t->fr, frptofchar(&t->fr, t->fr.p0), 1);
 	}
 
 			clock_t end = clock();
