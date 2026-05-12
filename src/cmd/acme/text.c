@@ -1409,38 +1409,38 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 			if(reg != region(q, p0)){	/* crossed starting point; reset */
 				if(reg > 0) {
 					frdrawsel(f, pt0, p0, p1, 0);
-					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
+					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
 				}
 				else if(reg < 0) {
 					frdrawsel(f, pt1, p1, p0, 0);
-					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, p0);
+					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, p0);
 				}
 				p1 = p0;
 				pt1 = pt0;
 				reg = region(q, p0);
 				if(reg == 0) {
 					frdrawsel(f, pt0, p0, p1, 1);
-					// tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+					tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 				}
 			}
 			qt = frptofchar(f, q);
 			if(reg > 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 1);
-					// tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
+					tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
 				}
 				else if(q < p1) {
 					frdrawsel(f, qt, q, p1, 0);
-					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, q, p1);
+					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, q, p1);
 				}
 			}else if(reg < 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 0);
-					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, q);
+					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, q);
 				}
 				else {
 					frdrawsel(f, qt, q, p1, 1);
-					// tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
+					tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
 				}
 			}
 			p1 = q;
