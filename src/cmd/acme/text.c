@@ -306,7 +306,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 				*/
 
 				// stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
-				if (!(f->p0 == f->p1 && p0 <= f->p0 && f->p0 <= p1) || action == SYHL_ACTION_TYPING) {
+				// NOTE: don't redraw when syhl or around edges - preserves the tick properly this way. Unless we're typing, in which case we want to redraw, but the tick is bit overdrawn, but it's rather hard to notice
+				if (!(f->p0 == f->p1 && p0-1 <= f->p0 && f->p0 <= p1+1) || action == SYHL_ACTION_TYPING) {
 					stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 				}
 
@@ -1626,7 +1627,7 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 	}
 	if(tsd) {
 		textscrdraw(t);
-		tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q1-t->org);
+		tsyhl(t, SYHL_ACTION_DRAW_FRAME, q0-t->org, q1-t->org);
 	} else{
 		if(t->w->nopen[QWevent] > 0)
 			nl = 3*t->fr.maxlines/4;
