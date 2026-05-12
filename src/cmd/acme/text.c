@@ -287,63 +287,38 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 			ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
 			ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
 
-			// printf("---- %lu %lu vs %u %u %d %s\n", p0, p1, start_sel, end_sel, action, buf);
-
-			if (action == SYHL_ACTION_CLEAR_SELECTION || end_sel < p0 || p1 < start_sel || start_sel == end_sel) { // nothing in selection
-
-				// NOTE: clean syhl sides if tick is on the edge char of the syhl or one char from it
-				/*
-				if (0 && f->p0 == f->p1 && (p0 <= f->p0 && f->p0 <= p1 || p0-1 == f->p0 || p1+1 == f->p0) && action != SYHL_ACTION_CLEAR_SELECTION) {
-					Point cleanpt = (Point){.x=pt.x+bufwid_offset, .y=pt.y};
-					cleanpt.x -= f->tickscale;
-					Rectangle r = Rect(cleanpt.x, cleanpt.y, cleanpt.x+FRTICKW*f->tickscale, cleanpt.y+f->font->height);
-					draw(f->b, r, cleantickback, nil, ZP); // clean left side
-
-					cleanpt.x += bufwid_buf;
-					r = Rect(cleanpt.x, cleanpt.y, cleanpt.x+FRTICKW*f->tickscale, cleanpt.y+f->font->height);
-					draw(f->b, r, cleantickback, nil, ZP); // clean right side
-				}
-				*/
-
-				// stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
-				// NOTE: don't redraw when syhl or around edges - preserves the tick properly this way. Unless we're typing, in which case we want to redraw, but the tick is bit overdrawn, but it's rather hard to notice
-				if (!(f->p0 == f->p1 && p0-1 <= f->p0 && f->p0 <= p1+1) || action == SYHL_ACTION_TYPING) {
-					stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
-				}
-
-				// NOTE: restore tick if syhl
-				// KNOWN: MAYBE: FIX: equality for some reason left drawing artifacts on the syhl edges, hence cleaning above
-				/*
-				if (0 && f->p0 == f->p1 && p0 <= f->p0 && f->p0 <= p1 && action != SYHL_ACTION_CLEAR_SELECTION) {
-					f->ticked = 0; // mark unticked
-					frtick(f, frptofchar(f, f->p0), 1); // redraw
-				}
-				*/
-
-				continue;
-			} else if (start_sel <= p0 && p1 <= end_sel && action != SYHL_ACTION_CLEAR_SELECTION) { // everything in selection
+	// printf("---- f->p0=%lu f->p1=%lu vs p0=%lu p1=%lu vs start_sel=%u end_sel=%u action=%d buf=%s\n", f->p0, f->p1, p0, p1, start_sel, end_sel, action, buf);
+			if (action == SYHL_ACTION_SELECTING && start_sel <= p0 && p1 <= end_sel) { // everything in selection
 				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
 				continue;	
-			}
+			} else if (action == SYHL_ACTION_SELECTING && (start_sel <= p0 && p0 <= end_sel || start_sel <= p1 && p1 <= end_sel) && start_sel != end_sel) { // partial selection
 
-			// NOTE: inspiration from selrestore
-			/* they now are known to overlap */
-			/* before selection */
-			int diff_before = 0;
-			int diff_after = 0;
-			if(p0 < start_sel){
-				diff_before = start_sel-p0;
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, diff_before, textcols[BACK], ZP);
+				// NOTE: inspiration from selrestore
+				/* they now are known to overlap */
+				/* before selection */
+				int diff_before = 0;
+				int diff_after = 0;
+				if(p0 < start_sel && start_sel <= p1 && p1 <= end_sel){
+					diff_before = start_sel-p0;
+					stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, diff_before, textcols[BACK], ZP);
+				}
+				/* after selection */
+				if(end_sel < p1 && start_sel <= p0 && p0 <= end_sel){
+					diff_after = p1-end_sel;
+					int bufwid_until_after = stringnwidth(f->font, buf, buf_len-diff_after);
+					stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_after, .y=pt.y}, text, ZP, f->font, buf+(buf_len-diff_after), diff_after, textcols[BACK], ZP);
+				}
+				/* inside selection */
+				int bufwid_until_before = stringnwidth(f->font, buf, diff_before);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
+			} else if (
+				action == SYHL_ACTION_DRAW_FRAME && (f->p0 == f->p1 || f->p0 != f->p1 && (p0-1 > f->p1 || f->p0 > p1+1)) ||
+				action == SYHL_ACTION_TYPING ||
+				action == SYHL_ACTION_CLEAR_SELECTION && start_sel != end_sel && (end_sel < p0 || p1 < start_sel) || 
+				action == SYHL_ACTION_CLEAR_ALL_SELECTION
+			) { // not in selection
+			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 			}
-			/* after selection */
-			if(end_sel < p1){
-				diff_after = p1-end_sel;
-				int bufwid_until_after = stringnwidth(f->font, buf, buf_len-diff_after);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_after, .y=pt.y}, text, ZP, f->font, buf+(buf_len-diff_after), diff_after, textcols[BACK], ZP);
-			}
-			/* inside selection */
-			int bufwid_until_before = stringnwidth(f->font, buf, diff_before);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
 		}
 	}
 }
@@ -1398,7 +1373,7 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 
 	f->modified = 0;
 	frdrawsel(f, frptofchar(f, f->p0), f->p0, f->p1, 0);
-	tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p0, f->p1);
+	tsyhl(t, SYHL_ACTION_CLEAR_ALL_SELECTION, f->p0, f->p1);
 	p0 = p1 = frcharofpt(f, mp);
 	f->p0 = p0;
 	f->p1 = p1;
@@ -1434,38 +1409,38 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 			if(reg != region(q, p0)){	/* crossed starting point; reset */
 				if(reg > 0) {
 					frdrawsel(f, pt0, p0, p1, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
+					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
 				}
 				else if(reg < 0) {
 					frdrawsel(f, pt1, p1, p0, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, p0);
+					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, p0);
 				}
 				p1 = p0;
 				pt1 = pt0;
 				reg = region(q, p0);
 				if(reg == 0) {
 					frdrawsel(f, pt0, p0, p1, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+					// tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
 				}
 			}
 			qt = frptofchar(f, q);
 			if(reg > 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
+					// tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
 				}
 				else if(q < p1) {
 					frdrawsel(f, qt, q, p1, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, q, p1);
+					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, q, p1);
 				}
 			}else if(reg < 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, q);
+					// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, q);
 				}
 				else {
 					frdrawsel(f, qt, q, p1, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
+					// tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
 				}
 			}
 			p1 = q;
@@ -1483,7 +1458,9 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		if(scrled)
 			(*f->scroll)(f, 0);
 		// NOTE: redraw, because some incremental checks will unselect syhl. But can't only rely on this, because otherwise moving back and forth with the selection doesn't draw syhl.
+		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, 0, f->p0-1);
 		tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
+		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p1+1, f->nchars);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
@@ -1627,7 +1604,7 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 	}
 	if(tsd) {
 		textscrdraw(t);
-		tsyhl(t, SYHL_ACTION_DRAW_FRAME, q0-t->org, q1-t->org);
+		// tsyhl(t, SYHL_ACTION_DRAW_FRAME, q0-t->org, q1-t->org); // MAYBE: not needed
 	} else{
 		if(t->w->nopen[QWevent] > 0)
 			nl = 3*t->fr.maxlines/4;
