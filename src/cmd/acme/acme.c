@@ -1070,20 +1070,6 @@ iconinit(void)
 		syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
 		syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
 		syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
-
-		{ // from src/libframe/frinit.c:frinittick and then made work here
-			int tickscale = scalesize(display, 1);
-			cleantick = allocimage(display, Rect(0, 0, tickscale*FRTICKW, font->height), display->screenimage->chan, 1, DWhite);
-			/* background color */
-			draw(cleantick, cleantick->r, textcols[BACK], nil, ZP);
-			/* vertical line */
-			draw(cleantick, Rect(tickscale*(FRTICKW/2), 0, tickscale*(FRTICKW/2+1), font->height), textcols[BACK], nil, ZP);
-			/* box on each end */
-			draw(cleantick, Rect(0, 0, tickscale*FRTICKW, tickscale*FRTICKW), textcols[BACK], nil, ZP);
-			draw(cleantick, Rect(0, font->height-tickscale*FRTICKW, tickscale*FRTICKW, font->height), textcols[BACK], nil, ZP);
-			cleantickback = allocimage(display, cleantick->r, display->screenimage->chan, 0, DWhite);
-		}
-
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);

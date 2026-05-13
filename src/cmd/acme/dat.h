@@ -55,6 +55,7 @@ typedef	struct	Text Text;
 typedef	struct	Timer Timer;
 typedef	struct	Window Window;
 typedef	struct	Xfid Xfid;
+typedef struct	Token Token;
 
 // NOTE: define additional colors for syntax highlighting
 #define		DGrey 0x808080FF
@@ -185,7 +186,8 @@ enum	/* Text.extension */
 	EXT_COUNT
 };
 
-enum { /* syntax_highlighting tokens */
+enum TokenType { /* syntax_highlighting tokens */
+	SYHL_NORMAL,
 	SYHL_CODETAG,
 	SYHL_KEYWORD,
 	SYHL_NUMBER,
@@ -201,8 +203,18 @@ enum SYHL_ACTION { /* syhl action */
 	SYHL_ACTION_TYPING,
 	SYHL_ACTION_SELECTING,
 	SYHL_ACTION_CLEAR_SELECTION,
-	SYHL_ACTION_CLEAR_ALL_SELECTION,
 	SYHL_ACTION_COUNT
+};
+
+struct Token
+{
+	int p0;
+	int p1;
+	char *s;
+	int s_len;
+	enum TokenType typ;
+	Image *text;
+	struct Token *next;
 };
 
 struct Text

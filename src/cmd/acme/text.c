@@ -25,8 +25,6 @@ enum{
 };
 
 Image 	*syhlcols[SYHL_NCOL];
-Image	*cleantick;
-Image	*cleantickback;
 int syntax_highlight_enabled = 1;
 
 int levenshtein(const char *s1, const char *s2) {
@@ -82,6 +80,289 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 			break;
 		}
 	}
+}
+
+Token *lex_line(Frame *f, Point pt, char* line, int line_len, int extension) {
+
+	Token *head = NULL;
+	Token *tail = NULL;
+
+	static char offset_buf[1024] = {0};
+	static char buf[128] = {0};
+	int buf_len = 0;
+	int offset = 0;
+	int offset_s = offset;
+	int should_draw = 0;
+
+	for (char *ptr = line; offset < line_len && *ptr != '\0'; ptr++, offset++) {
+
+		memset(offset_buf, 0, offset);
+		memset(buf, 0, sizeof(buf));
+
+		should_draw = 0;
+		offset_s = offset;
+		Image *text = NULL;
+		enum TokenType typ = SYHL_NORMAL;
+
+		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z' || *ptr == '_') {
+			offset_s = offset;
+			offset++;
+			ptr++;
+			for (; offset < line_len && *ptr != '\0' && 
+				(('a' <= *ptr && *ptr <= 'z') ||
+					('A' <= *ptr && *ptr <= 'Z') || 
+					('0' <= *ptr && *ptr <= '9') || 
+					*ptr == '_' || *ptr == '-'); ptr++, offset++) {}
+
+			buf_len = offset-offset_s;
+			memcpy(buf, line+offset_s, buf_len);
+
+			if (in_word_set_codetags(buf, buf_len)) {
+				text = syhlcols[SYHL_CODETAG];
+				typ = SYHL_CODETAG;
+				should_draw = 1;
+			}
+
+			switch (extension) {
+				case EXT_C:
+					if (in_word_set_c(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						typ = SYHL_KEYWORD;
+						should_draw = 1;
+					}
+					break;
+				case EXT_GO:
+					if (in_word_set_go(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						typ = SYHL_KEYWORD;
+						should_draw = 1;
+					}
+					break;
+				case EXT_PYTHON:
+					if (in_word_set_python(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						typ = SYHL_KEYWORD;
+						should_draw = 1;
+					}
+					break;
+				case EXT_JAVA:
+					if (in_word_set_java(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						typ = SYHL_KEYWORD;
+						should_draw = 1;
+					}
+					break;					
+			}
+
+			// NOTE: we passed end; step back
+			offset--; ptr--;
+
+		} else if ('0' <= *ptr && *ptr <= '9') {
+			offset_s = offset;
+			offset++;
+			ptr++;
+			for (; offset < line_len && *ptr != '\0' && 
+				('0' <= *ptr && *ptr <= '9' || 
+					*ptr == '.' ||
+					// NOTE: include a-zA-Z, so that invalid nr will be filtered out; eg 0x7 - valid, 9l is not
+					('a' <= *ptr && *ptr <= 'z') ||
+					('A' <= *ptr && *ptr <= 'Z')); ptr++, offset++) {}
+
+			buf_len = offset-offset_s;
+			memcpy(buf, line+offset_s, buf_len);
+
+			char *end;
+			strtold(buf, &end);
+			if (buf != end && *end == '\0') {
+				should_draw = 1;
+				text = syhlcols[SYHL_NUMBER];
+				typ = SYHL_NUMBER;
+			}
+
+			// NOTE: we passed end; step back
+			offset--; ptr--;
+		} else if (*ptr == '"' || *ptr == '\'') {
+			offset_s = offset;
+			should_draw = 1;
+			buf_len = 1;
+			buf[0] = *ptr;
+			text = syhlcols[SYHL_QUOTE];
+			typ = SYHL_QUOTE;
+		} else if (*ptr == '\\') {
+			offset_s = offset;
+			buf_len = 1;
+			buf[0] = *ptr;
+			if (offset+1 < line_len) {
+				buf[1] = *(ptr+1);
+				buf_len += 1;
+				should_draw = 1;
+			}
+			text = syhlcols[SYHL_ESCAPE];
+			typ = SYHL_ESCAPE;
+			// NOTE: step over escape end
+
+			offset++; ptr++;
+		} else if (*ptr == '(' || *ptr == ')' || 
+					*ptr == '[' || *ptr == ']' || 
+					*ptr == '{' || *ptr == '}') {
+			offset_s = offset;
+			should_draw = 1;
+			buf[0] = *ptr;
+			buf_len = 1;
+			text = syhlcols[SYHL_PAREN];
+			typ = SYHL_PAREN;
+		} else if ((*ptr == '/' && (offset+1 < line_len && *(ptr+1) == '/' || *(ptr+1) == '*') || (offset+1 < line_len && *ptr == '*' && *(ptr+1) == '/')) && (extension == EXT_C || extension == EXT_GO || extension == EXT_JAVA)) {
+			offset_s = offset;
+			buf_len = 1;
+			buf[0] = *ptr;
+			if (offset+1 < line_len) {
+				buf[1] = *(ptr+1);
+				buf_len += 1;
+				should_draw = 1;
+			}
+			text = syhlcols[SYHL_COMMENT];
+			typ = SYHL_COMMENT;
+			// NOTE: step over comment end
+			offset++; ptr++;
+		} else if (extension == EXT_PYTHON && *ptr == '#') {
+			offset_s = offset;
+			buf_len = 1;
+			buf[0] = *ptr;
+			should_draw = 1;
+			text = syhlcols[SYHL_COMMENT];
+			typ = SYHL_COMMENT;
+			// NOTE: step over comment end
+			offset++; ptr++;
+		}
+
+		if (!should_draw || text == NULL) {
+			continue;
+		}
+
+		memcpy(offset_buf, line, offset_s);
+		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
+		int bufwid_buf = stringnwidth(f->font, buf, buf_len);
+
+		ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
+		ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
+
+		Token *tk = calloc(1, sizeof(Token));
+
+		tk->p0 = p0;
+		tk->p1 = p1;
+		tk->s = calloc(buf_len+1, sizeof(char));
+		memcpy(tk->s, buf, buf_len);
+		tk->s_len = buf_len;
+		tk->text = text;
+		tk->typ = typ;
+
+		if (head == NULL) {
+			head = tk;
+			tail = tk;
+		} else {
+			tail->next = tk;
+			tail = tk;
+		}
+	}
+	return head;	
+}
+
+void free_tokens(Token *tk) {
+	while (tk != NULL) {
+		Token *me = tk;
+		tk = tk->next;
+		if (me->s) free(me->s);
+		free(me);
+	}
+}
+
+void print_tokens(Token *tk) {
+	while (tk != NULL) {
+		printf("Token: {p0=%u, p1=%u, s=%s, typ=%d, next=%p}\n", tk->p0, tk->p1, tk->s, tk->typ, tk->next);
+		tk = tk->next;
+	}
+}
+
+void tokenizer(Text *t, Rune *r, uint p0, uint p1) {
+	clock_t begin = clock();
+
+	if (t->what != Body || !syntax_highlight_enabled || t->fr.nbox == 0) {
+		frinsert(&t->fr, r, r+(p1-p0), p0);
+		return;
+	}
+
+
+	Frbox *b;
+	int nb;
+	Token *tokens = NULL;
+	Token *tail = NULL;
+
+	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
+	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
+		_frcklinewrap(&t->fr, &pt, b);
+		if(!t->fr.noredraw && b->nrune >= 0) {
+			uint pp0 = frcharofpt(&t->fr, pt);
+			uint pp1 = frcharofpt(&t->fr, (Point){.x=pt.x+b->wid, .y=pt.y});
+			if (!( // if not following, then skip line
+				pp0 <= p0 && p0 <= pp1 || // drawing starts on this line
+				pp0 <= p1 && p1 <= pp1 || // drawing ends on this line
+				p0 <= pp0 && pp1 <= p1 // full line drawn
+			)) {
+				goto Continue;
+			}
+			Token *tk = lex_line(&t->fr, pt, (char*)b->ptr, b->nrune, t->extension);
+			if (tk == NULL) goto Continue;
+			if (tokens == NULL) {
+				tokens = tk;
+				tail = tk;
+			} else {
+				tail->next = tk;
+				while (tk->next != NULL) {
+					tk = tk->next;
+				}
+				tail = tk;
+			}
+		}
+		Continue:
+		pt.x += b->wid;
+	}
+
+
+	if (tokens == NULL) {	
+		frinsert(&t->fr, r, r+(p1-p0), p0);
+		goto CleanTokens;
+	}
+
+	Token *cur_token = tokens;
+	uint pp = p0;
+	while (cur_token != NULL) {
+		int diff = cur_token->p0 - pp;
+		printf("HERE: %u %u %u %d %u %u %u\n", p0, p1, pp, diff, pp-p0, pp-p0+diff, cur_token->p0);
+		if (diff < 0) {
+			break;
+		} else if (diff == 0 || diff != 0 && pp > p1) {
+			Point pptt = frptofchar(&t->fr, pp);
+			stringnbg(t->fr.b, pptt, cur_token->text, ZP, t->fr.font, cur_token->s, cur_token->s_len, textcols[BACK], ZP);
+			pp += cur_token->s_len;
+			cur_token = cur_token->next;
+		} else if (pp < p1) {
+			frinsert(&t->fr, r+(pp-p0),r+(pp-p0)+diff, pp);
+			pp += diff;
+		}
+	}
+	if (pp < p1) {
+		frinsert(&t->fr, r+(pp-p0),r+p1, pp);	
+	}
+
+	CleanTokens:
+	print_tokens(tokens);
+	free_tokens(tokens);
+
+
+
+			clock_t end = clock();
+			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+			printf("tokenizer spent1: %f sec\n", time_spent);
 }
 
 // FIXME: moving with arrow keys doesn't properly redraw tick/cursor. Backspace to prev line also doesn't redraw the cursor.
@@ -279,51 +560,57 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 			offset++; ptr++;
 		}
 
-		if (should_draw && text != NULL) {
-			memcpy(offset_buf, (char *)b->ptr, offset_s);
-			int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
-			int bufwid_buf = stringnwidth(f->font, buf, buf_len);
+		if (!should_draw || text == NULL) {
+			continue;
+		}
 
-			ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
-			ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
 
-	// printf("---- f->p0=%lu f->p1=%lu vs p0=%lu p1=%lu vs start_sel=%u end_sel=%u action=%d buf=%s\n", f->p0, f->p1, p0, p1, start_sel, end_sel, action, buf);
-			if (action == SYHL_ACTION_SELECTING && start_sel <= p0 && p1 <= end_sel) { // everything in selection
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
-				continue;	
-			} else if (action == SYHL_ACTION_SELECTING && (start_sel <= p0 && p0 <= end_sel || start_sel <= p1 && p1 <= end_sel) && start_sel != end_sel) { // partial selection
+		memcpy(offset_buf, (char *)b->ptr, offset_s);
+		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
+		int bufwid_buf = stringnwidth(f->font, buf, buf_len);
 
-				// NOTE: inspiration from selrestore
-				/* they now are known to overlap */
-				/* before selection */
-				int diff_before = 0;
-				int diff_after = 0;
-				if(p0 < start_sel && start_sel <= p1 && p1 <= end_sel){
-					diff_before = start_sel-p0;
-					stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, diff_before, textcols[BACK], ZP);
-				}
-				/* after selection */
-				if(end_sel < p1 && start_sel <= p0 && p0 <= end_sel){
-					diff_after = p1-end_sel;
-					int bufwid_until_after = stringnwidth(f->font, buf, buf_len-diff_after);
-					stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_after, .y=pt.y}, text, ZP, f->font, buf+(buf_len-diff_after), diff_after, textcols[BACK], ZP);
-				}
-				/* inside selection */
-				int bufwid_until_before = stringnwidth(f->font, buf, diff_before);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
-			} else if (
-				action == SYHL_ACTION_DRAW_FRAME && (f->p0 == f->p1 || f->p0 != f->p1 && (p0-1 > f->p1 || f->p0 > p1+1)) ||
-				action == SYHL_ACTION_TYPING ||
-				action == SYHL_ACTION_CLEAR_SELECTION && start_sel != end_sel && (end_sel < p0 || p1 < start_sel) || 
-				action == SYHL_ACTION_CLEAR_ALL_SELECTION
-			) { // not in selection
-			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
+		stringn(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len);
+		continue;
+
+		ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
+		ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
+
+// printf("---- f->p0=%lu f->p1=%lu vs p0=%lu p1=%lu vs f->p0=%u f->p1=%u action=%d buf=%s\n", f->p0, f->p1, p0, p1, f->p0, f->p1, action, buf);
+		if (action == SYHL_ACTION_SELECTING && (start_sel <= p0 && p1 <= end_sel || f->p0 <= p0 && p1 <= f->p1)) { // everything in selection
+			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
+			continue;	
+		} else if (action == SYHL_ACTION_SELECTING && (start_sel <= p0 && p0 <= end_sel || start_sel <= p1 && p1 <= end_sel) && start_sel != end_sel && f->p0 != f->p1) { // partial selection
+
+			// NOTE: inspiration from selrestore
+			/* they now are known to overlap */
+			/* before selection */
+			int diff_before = 0;
+			int diff_after = 0;
+			if(p0 < start_sel && start_sel <= p1 && p1 <= end_sel){
+				diff_before = start_sel-p0;
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, diff_before, textcols[BACK], ZP);
 			}
+			/* after selection */
+			if(end_sel < p1 && start_sel <= p0 && p0 <= end_sel){
+				diff_after = p1-end_sel;
+				int bufwid_until_after = stringnwidth(f->font, buf, buf_len-diff_after);
+				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_after, .y=pt.y}, text, ZP, f->font, buf+(buf_len-diff_after), diff_after, textcols[BACK], ZP);
+			}
+			/* inside selection */
+			int bufwid_until_before = stringnwidth(f->font, buf, diff_before);
+			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
+		} else if (
+			action == SYHL_ACTION_DRAW_FRAME && (f->p0 == f->p1 || f->p0 != f->p1 && (p0-1 > f->p1 || f->p0 > p1+1)) ||
+			action == SYHL_ACTION_TYPING ||
+			action == SYHL_ACTION_CLEAR_SELECTION && f->p0 != f->p1
+		) { // not in selection
+		stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
 		}
 	}
 }
 
 void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
+	return;
 	clock_t begin = clock();
 
 	if (t->what != Body || !syntax_highlight_enabled) {
@@ -363,6 +650,8 @@ void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
 			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
 			// printf("_frsyhl spent1: %f sec\n", time_spent);
 }
+
+
 
 void
 textinit(Text *t, File *f, Rectangle r, Reffont *rf, Image *cols[NCOL])
@@ -635,8 +924,9 @@ textload(Text *t, uint q0, char *file, int setqid)
 		if(q < t->org)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
-			frinsert(&t->fr, rp, rp+n, q-t->org);
-			tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+			// frinsert(&t->fr, rp, rp+n, q-t->org);
+			// tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+			tokenizer(t, rp, q-t->org, q-t->org+n);
 		}
 		if(t->fr.lastlinefull)
 			break;
@@ -652,9 +942,12 @@ textload(Text *t, uint q0, char *file, int setqid)
 		}
 		textsetselect(u, q0, q0);
 	}
+
 	if(nulls)
 		warning(nil, "%s: NUL bytes elided\n", file);
 	free(d);
+
+
 	return q1-q0;
 
     Rescue:
@@ -743,8 +1036,9 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 	if(q0 < t->org)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
-		frinsert(&t->fr, r, r+n, q0-t->org);
-		tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q0-t->org+n);
+		tokenizer(t, r, q0-t->org, q0-t->org+n);
+		// frinsert(&t->fr, r, r+n, q0-t->org);
+		// tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q0-t->org+n);
 	}
 	if(t->w){
 		c = 'i';
@@ -797,8 +1091,9 @@ textfill(Text *t)
 					break;
 			}
 		}
-		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
-		tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+		tokenizer(t, rp, t->fr.nchars, t->fr.nchars+i);
+		// frinsert(&t->fr, rp, rp+i, t->fr.nchars);
+		// tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -1373,7 +1668,7 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 
 	f->modified = 0;
 	frdrawsel(f, frptofchar(f, f->p0), f->p0, f->p1, 0);
-	tsyhl(t, SYHL_ACTION_CLEAR_ALL_SELECTION, f->p0, f->p1);
+	tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p0, f->p1);
 	p0 = p1 = frcharofpt(f, mp);
 	f->p0 = p0;
 	f->p1 = p1;
@@ -1458,9 +1753,9 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		if(scrled)
 			(*f->scroll)(f, 0);
 		// NOTE: redraw, because some incremental checks will unselect syhl. But can't only rely on this, because otherwise moving back and forth with the selection doesn't draw syhl.
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, 0, f->p0-1);
-		tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p1+1, f->nchars);
+		// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, 0, f->p0-1);
+		// tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
+		// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p1+1, f->nchars);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
@@ -1604,7 +1899,6 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 	}
 	if(tsd) {
 		textscrdraw(t);
-		// tsyhl(t, SYHL_ACTION_DRAW_FRAME, q0-t->org, q1-t->org); // MAYBE: not needed
 	} else{
 		if(t->w->nopen[QWevent] > 0)
 			nl = 3*t->fr.maxlines/4;
@@ -1720,7 +2014,7 @@ textsetselect(Text *t, uint q0, uint q1)
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
-	// tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
+	tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
 }
 
 /*
@@ -2118,8 +2412,9 @@ textsetorigin(Text *t, uint org, int exact)
 		n = t->org - org;
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
-		frinsert(&t->fr, r, r+n, 0);
-		tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+		tokenizer(t, r, 0, n);
+		// frinsert(&t->fr, r, r+n, 0);
+		// tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
