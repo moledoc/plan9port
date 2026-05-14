@@ -107,7 +107,6 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 	int offset_s = offset;
 	int should_draw = 0;
 
-
 	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++) {
 
 		memset(offset_buf, 0, offset);
@@ -256,7 +255,6 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 		if (!should_draw || text == NULL) {
 			continue;
 		}
-
 
 		memcpy(offset_buf, (char *)b->ptr, offset_s);
 		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
