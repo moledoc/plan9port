@@ -407,8 +407,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 				text = syhlcols[SYHL_CODETAG];
 				should_draw = 1;
 			} else if (action == SYHL_ACTION_TYPING) {
-				// lev_dist_1((char **)keywords_codetags, sizeof(keywords_codetags)/sizeof(keywords_codetags[0]), buf, &text, &should_draw);
-				for (int ii=0; ii<keywords_codetags_count; ii++){
+				lev_dist_1((char **)keywords_codetags, sizeof(keywords_codetags)/sizeof(keywords_codetags[0]), buf, &text, &should_draw);
+				for (int ii=0; 0 && ii<keywords_codetags_count; ii++){
 					int lev = levenshtein(keywords_codetags[ii], buf);
 					if (lev == 1) {
 						text = textcols[TEXT];
@@ -424,8 +424,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
 					} else if (action == SYHL_ACTION_TYPING) {
-						// lev_dist_1((char **)keywords_c, sizeof(keywords_c)/sizeof(keywords_c[0]), buf, &text, &should_draw);
-						for (int ii=0; ii<keywords_c_count; ii++){
+						lev_dist_1((char **)keywords_c, sizeof(keywords_c)/sizeof(keywords_c[0]), buf, &text, &should_draw);
+						for (int ii=0; 0 && ii<keywords_c_count; ii++){
 							int lev = levenshtein(keywords_c[ii], buf);
 							if (lev == 1) {
 								text = textcols[TEXT];
@@ -440,8 +440,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
 					} else if (action == SYHL_ACTION_TYPING) {
-						// lev_dist_1((char **)keywords_go, sizeof(keywords_go)/sizeof(keywords_go[0]), buf, &text, &should_draw);
-						for (int ii=0; ii<keywords_go_count; ii++){
+						lev_dist_1((char **)keywords_go, sizeof(keywords_go)/sizeof(keywords_go[0]), buf, &text, &should_draw);
+						for (int ii=0; 0 && ii<keywords_go_count; ii++){
 							int lev = levenshtein(keywords_go[ii], buf);
 							if (lev == 1) {
 								text = textcols[TEXT];
@@ -456,8 +456,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
 					} else if (action == SYHL_ACTION_TYPING) {
-						// lev_dist_1((char **)keywords_python, sizeof(keywords_python)/sizeof(keywords_python[0]), buf, &text, &should_draw);
-						for (int ii=0; ii<keywords_python_count; ii++){
+						lev_dist_1((char **)keywords_python, sizeof(keywords_python)/sizeof(keywords_python[0]), buf, &text, &should_draw);
+						for (int ii=0; 0 && ii<keywords_python_count; ii++){
 							int lev = levenshtein(keywords_python[ii], buf);
 							if (lev == 1) {
 								text = textcols[TEXT];
@@ -472,8 +472,8 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 						text = syhlcols[SYHL_KEYWORD];
 						should_draw = 1;
 					} else if (action == SYHL_ACTION_TYPING) {
-						// lev_dist_1((char **)keywords_java, sizeof(keywords_java)/sizeof(keywords_java[0]), buf, &text, &should_draw);
-						for (int ii=0; ii<keywords_java_count; ii++){
+						lev_dist_1((char **)keywords_java, sizeof(keywords_java)/sizeof(keywords_java[0]), buf, &text, &should_draw);
+						for (int ii=0; 0 && ii<keywords_java_count; ii++){
 							int lev = levenshtein(keywords_java[ii], buf);
 							if (lev == 1) {
 								text = textcols[TEXT];
@@ -569,6 +569,7 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
 		int bufwid_buf = stringnwidth(f->font, buf, buf_len);
 
+		// stringn(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, syhlcols[SYHL_CLEAN_FG], ZP, f->font, buf, buf_len);
 		stringn(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len);
 		continue;
 
@@ -610,7 +611,6 @@ void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION actio
 }
 
 void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
-	return;
 	clock_t begin = clock();
 
 	if (t->what != Body || !syntax_highlight_enabled) {
@@ -924,9 +924,9 @@ textload(Text *t, uint q0, char *file, int setqid)
 		if(q < t->org)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
-			// frinsert(&t->fr, rp, rp+n, q-t->org);
-			// tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
-			tokenizer(t, rp, q-t->org, q-t->org+n);
+			frinsert(&t->fr, rp, rp+n, q-t->org);
+			tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+			// tokenizer(t, rp, q-t->org, q-t->org+n);
 		}
 		if(t->fr.lastlinefull)
 			break;
@@ -1036,9 +1036,9 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 	if(q0 < t->org)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
-		tokenizer(t, r, q0-t->org, q0-t->org+n);
-		// frinsert(&t->fr, r, r+n, q0-t->org);
-		// tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q0-t->org+n);
+		// tokenizer(t, r, q0-t->org, q0-t->org+n);
+		frinsert(&t->fr, r, r+n, q0-t->org);
+		tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q0-t->org+n);
 	}
 	if(t->w){
 		c = 'i';
@@ -1091,9 +1091,9 @@ textfill(Text *t)
 					break;
 			}
 		}
-		tokenizer(t, rp, t->fr.nchars, t->fr.nchars+i);
-		// frinsert(&t->fr, rp, rp+i, t->fr.nchars);
-		// tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+		// tokenizer(t, rp, t->fr.nchars, t->fr.nchars+i);
+		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
+		tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -2412,9 +2412,9 @@ textsetorigin(Text *t, uint org, int exact)
 		n = t->org - org;
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
-		tokenizer(t, r, 0, n);
-		// frinsert(&t->fr, r, r+n, 0);
-		// tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+		// tokenizer(t, r, 0, n);
+		frinsert(&t->fr, r, r+n, 0);
+		tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
