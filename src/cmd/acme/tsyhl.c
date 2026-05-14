@@ -198,6 +198,7 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 
 			// NOTE: we passed end; step back
 			offset--; ptr--;
+
 		} else if (*ptr == '"' || *ptr == '\'') {
 			offset_s = offset;
 			should_draw = 1;
@@ -214,9 +215,10 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 				should_draw = 1;
 			}
 			text = syhlcols[SYHL_ESCAPE];
-			// NOTE: step over escape end
 
+			// NOTE: step over escape end
 			offset++; ptr++;
+
 		} else if (*ptr == '(' || *ptr == ')' || 
 					*ptr == '[' || *ptr == ']' || 
 					*ptr == '{' || *ptr == '}') {
@@ -235,16 +237,20 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 				should_draw = 1;
 			}
 			text = syhlcols[SYHL_COMMENT];
+
 			// NOTE: step over comment end
 			offset++; ptr++;
+
 		} else if (extension == EXT_PYTHON && *ptr == '#') {
 			offset_s = offset;
 			buf_len = 1;
 			buf[0] = *ptr;
 			should_draw = 1;
 			text = syhlcols[SYHL_COMMENT];
+
 			// NOTE: step over comment end
 			offset++; ptr++;
+
 		}
 
 		if (!should_draw || text == NULL) {
@@ -295,9 +301,9 @@ void tsyhl(Text *t, uint p0, uint p1, enum SYHL_ACTION action) {
 			uint lp1 = frcharofpt(&t->fr, (Point){.x=pt.x+b->wid, .y=pt.y});
 			if (p1 < lp0) break;
 			if (!( // if not following, then skip line
-				lp0 <= p0 && p0 <= lp1 || // drawing starts on this line
-				lp0 <= p1 && p1 <= lp1 || // drawing ends on this line
-				p0 <= lp0 && lp1 <= p1 // full line drawn
+				lp0 <= p0 && p0 <= lp1 || // NOTE: drawing starts on this line
+				lp0 <= p1 && p1 <= lp1 || // NOTE: drawing ends on this line
+				p0 <= lp0 && lp1 <= p1 // NOTE: full line drawn
 			)) {
 				goto Continue;
 			}
