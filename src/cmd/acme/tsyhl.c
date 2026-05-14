@@ -71,7 +71,6 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 }
 
 // NOTE: calculating background color is quite expensive
-// if performace issues, use `simplified` boarder fixing, but it will have some weirdness when scrolling over selected text
 Image*
 bgmatch(Point p)
 {
@@ -259,10 +258,16 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 		Point p =  Pt(pt.x+bufwid_offset, pt.y);
 
 		// fix boarder
+
+		// NOTE: expensive, but 100% correct
 		// Image *back = bgmatch(p);
-		// NOTE: simplified bg
-		Image *back = textcols[BACK];
-		if (action == SYHL_ACTION_SELECTING) back = textcols[HIGH];
+
+		// NOTE: simplified: fast, but not 100% correct - when selection, then all lines that have highlight will have the boarder fixed, regardless if it's actually in the selection or not
+		// Image *back = action == SYHL_ACTION_SELECTING ? textcols[HIGH] : textcols[BACK]; // NOTE: fast, but not 100% correct (but seems the incorrectness is not very noticable)
+		
+		// NOTE: simplified++: fast, but not 100% correct - syhl items will pop in selection with white boarder
+		Image *back = textcols[BACK]; // NOTE: 
+
 		stringn(screen, addpt(p, Pt(-1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 0,-1)), back, ZP, f->font, buf, buf_len);
