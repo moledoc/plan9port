@@ -678,6 +678,11 @@ texttype(Text *t, Rune r)
 	Rune *rp;
 	Text *u;
 
+	Point pt;
+	ulong diff;
+	ulong tq0;
+	int case_down_move_tick = 0;
+
 	if(t->what!=Body && t->what!=Tag && r=='\n')
 		return;
 	if(t->what == Tag)
@@ -699,8 +704,26 @@ texttype(Text *t, Rune r)
 	case Kdown:
 		if(t->what == Tag)
 			goto Tagdown;
-		n = t->fr.maxlines/3;
-		goto case_Down;
+
+		// NOTE: arrow down is row down
+		ArrowDown:
+		typecommit(t);
+		pt = frptofchar(&t->fr, t->fr.p0);
+		pt.y += t->fr.font->height;
+		diff = frcharofpt(&t->fr, pt) - t->fr.p0;
+		tq0 = t->q0+diff;
+		if(tq0 >= t->org+t->fr.nchars) { // NOTE: out of frame, move frame one line
+			n = 1;
+			case_down_move_tick = 1;
+			goto case_Down;
+		} else if(tq0 < t->file->b.nc) {
+			textshow(t, tq0, tq0, TRUE);
+		}
+		return;
+
+		// NOTE: arrow down is page down
+		// n = t->fr.maxlines/3;
+		// goto case_Down;
 	case Kscrollonedown:
 		if(t->what == Tag)
 			goto Tagdown;
@@ -713,6 +736,7 @@ texttype(Text *t, Rune r)
 	case_Down:
 		q0 = t->org+frcharofpt(&t->fr, Pt(t->fr.r.min.x, t->fr.r.min.y+n*t->fr.font->height));
 		textsetorigin(t, q0, TRUE);
+		if (case_down_move_tick) goto ArrowDown;
 		return;
 	case Kup:
 		if(t->what == Tag)
