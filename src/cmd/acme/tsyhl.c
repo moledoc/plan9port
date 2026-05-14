@@ -56,7 +56,6 @@ int levenshtein(const char *s1, const char *s2) {
     return result;
 }
 
-
 void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_draw) {
 	if (kws == NULL || kws_len == 0 || text == NULL || should_draw == NULL) {
 		return;
@@ -69,6 +68,35 @@ void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_dr
 			break;
 		}
 	}
+}
+
+// NOTE: calculating background color is quite expensive
+// if performace issues, use `simplified` boarder fixing, but it will have some weirdness when scrolling over selected text
+Image*
+bgmatch(Point p)
+{
+    uchar px[4];
+    uchar back[4];
+    uchar high[4];
+
+    /* read screen pixel */
+    unloadimage(screen, Rect(p.x, p.y, p.x+1, p.y+1), px, 4);
+
+    /* read BACK color pixel */
+    unloadimage(textcols[BACK], Rect(0,0,1,1), back, 4);
+
+    /* read HIGH color pixel */
+    unloadimage(textcols[HIGH], Rect(0,0,1,1), high, 4);
+
+    /* compare against BACK */
+    if(px[0]==back[0] && px[1]==back[1] && px[2]==back[2])
+        return textcols[BACK];
+
+    /* compare against HIGH */
+    if(px[0]==high[0] && px[1]==high[1] && px[2]==high[2])
+        return textcols[HIGH];
+
+    return textcols[BACK];
 }
 
 void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action) {
@@ -228,7 +256,20 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 		memcpy(offset_buf, (char *)b->ptr, offset_s);
 		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
 
-		stringn(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len);
+		Point p =  Pt(pt.x+bufwid_offset, pt.y);
+
+		// fix boarder
+		// Image *back = bgmatch(p);
+		// NOTE: simplified bg
+		Image *back = textcols[BACK];
+		if (action == SYHL_ACTION_SELECTING) back = textcols[HIGH];
+		stringn(screen, addpt(p, Pt(-1, 0)), back, ZP, f->font, buf, buf_len);
+		stringn(screen, addpt(p, Pt( 1, 0)), back, ZP, f->font, buf, buf_len);
+		stringn(screen, addpt(p, Pt( 0,-1)), back, ZP, f->font, buf, buf_len);
+		stringn(screen, addpt(p, Pt( 0, 1)), back, ZP, f->font, buf, buf_len);
+
+		// draw inside
+		stringn(f->b, p, text, ZP, f->font, buf, buf_len);
 	}
 }
 
@@ -247,6 +288,7 @@ void tsyhl(Text *t, uint p0, uint p1, enum SYHL_ACTION action) {
 		if(!t->fr.noredraw && b->nrune >= 0) {
 			uint lp0 = frcharofpt(&t->fr, pt);
 			uint lp1 = frcharofpt(&t->fr, (Point){.x=pt.x+b->wid, .y=pt.y});
+			if (p1 < lp0) break;
 			if (!( // if not following, then skip line
 				lp0 <= p0 && p0 <= lp1 || // drawing starts on this line
 				lp0 <= p1 && p1 <= lp1 || // drawing ends on this line

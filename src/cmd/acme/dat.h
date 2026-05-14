@@ -199,6 +199,7 @@ enum { /* syntax_highlighting tokens */
 enum SYHL_ACTION { /* syhl action */
 	SYHL_ACTION_DEFAULT,
 	SYHL_ACTION_TYPING,
+	SYHL_ACTION_SELECTING,
 	SYHL_ACTION_COUNT
 };
 
