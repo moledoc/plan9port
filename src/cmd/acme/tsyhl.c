@@ -267,10 +267,10 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 		// Image *back = bgmatch(p);
 
 		// NOTE: simplified: fast, but not 100% correct - when selection, then all lines that have highlight will have the boarder fixed, regardless if it's actually in the selection or not
-		Image *back = action == SYHL_ACTION_SELECTING ? textcols[HIGH] : textcols[BACK]; // NOTE: fast, but not 100% correct (but seems the incorrectness is not very noticable)
+		Image *back = action == SYHL_ACTION_SELECTING ? textcols[HIGH] : textcols[BACK];
 		
 		// NOTE: simplified++: fast, but not 100% correct - syhl items will pop in selection with white boarder
-		// Image *back = textcols[BACK]; // NOTE: 
+		// Image *back = textcols[BACK];
 
 		stringn(screen, addpt(p, Pt(-1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 1, 0)), back, ZP, f->font, buf, buf_len);
