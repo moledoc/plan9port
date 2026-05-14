@@ -681,7 +681,7 @@ texttype(Text *t, Rune r)
 	Point pt;
 	ulong diff;
 	ulong tq0;
-	int case_down_move_tick = 0;
+	int arrow_up_down_out_of_frame = 0;
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
 		return;
@@ -714,7 +714,7 @@ texttype(Text *t, Rune r)
 		tq0 = t->q0+diff;
 		if(tq0 >= t->org+t->fr.nchars) { // NOTE: out of frame, move frame one line
 			n = 1;
-			case_down_move_tick = 1;
+			arrow_up_down_out_of_frame = 1;
 			goto case_Down;
 		} else if(tq0 < t->file->b.nc) {
 			textshow(t, tq0, tq0, TRUE);
@@ -736,13 +736,30 @@ texttype(Text *t, Rune r)
 	case_Down:
 		q0 = t->org+frcharofpt(&t->fr, Pt(t->fr.r.min.x, t->fr.r.min.y+n*t->fr.font->height));
 		textsetorigin(t, q0, TRUE);
-		if (case_down_move_tick) goto ArrowDown;
+		if (arrow_up_down_out_of_frame) goto ArrowDown;
 		return;
 	case Kup:
 		if(t->what == Tag)
 			goto Tagup;
-		n = t->fr.maxlines/3;
-		goto case_Up;
+
+		// NOTE: arrow down is row down
+		ArrowUp:
+		typecommit(t);
+		pt = frptofchar(&t->fr, t->fr.p0);
+		pt.y -= t->fr.font->height;
+		diff = t->fr.p0 - frcharofpt(&t->fr, pt);
+		tq0 = t->q0-diff;
+		if(tq0 <= t->org) { // NOTE: out of frame, move frame one line
+			n = 1;
+			arrow_up_down_out_of_frame = 1;
+			goto case_Up;
+		} else if(tq0 > 0) {
+			textshow(t, tq0, tq0, TRUE);
+		}
+		return;
+		// NOTE: moves page up
+		// n = t->fr.maxlines/3;
+		// goto case_Up;
 	case Kscrolloneup:
 		if(t->what == Tag)
 			goto Tagup;
@@ -753,6 +770,7 @@ texttype(Text *t, Rune r)
 	case_Up:
 		q0 = textbacknl(t, t->org, n);
 		textsetorigin(t, q0, TRUE);
+		if (arrow_up_down_out_of_frame) goto ArrowUp;
 		return;
 	case Khome:
 		typecommit(t);
