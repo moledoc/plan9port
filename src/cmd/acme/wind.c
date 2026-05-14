@@ -29,7 +29,7 @@ int file_ext(Rune *rp, int nc) {
 		return EXT_NONE;
 	}
 
-	ext_str += 1;
+	ext_str += 1; // NOTE: step over '.'
 
 	int ext = EXT_NONE;
 	if (strcmp(ext_str, "c") == 0 || strcmp(ext_str, "h") == 0 || strcmp(ext_str, "cpp") == 0) {
