@@ -3,6 +3,42 @@
 TARG=acme
 DIRS=mail
 
+SUFFIXES: .gperf _hash.c $O
+
+# generate keywords headers
+keywords_codetags.h: gen_keywords.py keywords_codetags.gperf
+	./gen_keywords.py keywords_codetags.gperf
+
+keywords_c.h: gen_keywords.py keywords_c.gperf
+	./gen_keywords.py keywords_c.gperf
+
+keywords_go.h: gen_keywords.py keywords_go.gperf
+	./gen_keywords.py keywords_go.gperf
+
+keywords_python.h: gen_keywords.py keywords_python.gperf
+	./gen_keywords.py keywords_python.gperf
+
+keywords_java.h: gen_keywords.py keywords_java.gperf
+	./gen_keywords.py keywords_java.gperf
+
+# generate c code with gperf:
+# gperf -C -E -t -L C -N in_word_set_<lang> keywords_<lang>.gperf > keywords_<lang>_hash.c
+
+keywords_c_hash.c: keywords_c.gperf
+	gperf -C -E -t -L C -N in_word_set_c keywords_c.gperf > keywords_c_hash.c
+
+keywords_go_hash.c: keywords_go.gperf
+	gperf -C -E -t -L C -N in_word_set_go keywords_go.gperf > keywords_go_hash.c
+
+keywords_python_hash.c: keywords_python.gperf
+	gperf -C -E -t -L C -N in_word_set_python keywords_python.gperf > keywords_python_hash.c
+
+keywords_java_hash.c: keywords_java.gperf
+	gperf -C -E -t -L C -N in_word_set_java keywords_java.gperf > keywords_java_hash.c
+
+keywords_codetags_hash.c: keywords_codetags.gperf
+	gperf -C -E -t -L C -N in_word_set_codetags keywords_codetags.gperf > keywords_codetags_hash.c
+
 OFILES=\
 	acme.$O\
 	addr.$O\
@@ -26,10 +62,22 @@ OFILES=\
 	wind.$O\
 	xfid.$O\
 	dat.$O\
+	tsyhl.$O\
+	keywords_c_hash.$O\
+	keywords_go_hash.$O\
+	keywords_python_hash.$O\
+	keywords_java_hash.$O\
+	keywords_codetags_hash.$O\
 
 HFILES=dat.h\
 	edit.h\
 	fns.h\
+	keywords.h\
+	keywords_codetags.h\
+	keywords_c.h\
+	keywords_go.h\
+	keywords_python.h\
+	keywords_java.h\
 
 <$PLAN9/src/mkone
 <$PLAN9/src/mkdirs

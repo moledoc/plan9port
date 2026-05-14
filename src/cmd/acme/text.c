@@ -291,8 +291,10 @@ textload(Text *t, uint q0, char *file, int setqid)
 		bufread(&t->file->b, q, rp, n);
 		if(q < t->org)
 			t->org += n;
-		else if(q <= t->org+t->fr.nchars)
+		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
+			tsyhl(t, q-t->org, q-t->org+n, SYHL_ACTION_DEFAULT);
+		}
 		if(t->fr.lastlinefull)
 			break;
 	}
@@ -388,7 +390,6 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 					textscrdraw(u);
 				}
 			}
-
 	}
 	if(q0 < t->iq1)
 		t->iq1 += n;
@@ -398,8 +399,10 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 		t->q0 += n;
 	if(q0 < t->org)
 		t->org += n;
-	else if(q0 <= t->org+t->fr.nchars)
+	else if(q0 <= t->org+t->fr.nchars) {
 		frinsert(&t->fr, r, r+n, q0-t->org);
+		tsyhl(t, q0-t->org, q0-t->org+n, SYHL_ACTION_TYPING);
+	}
 	if(t->w){
 		c = 'i';
 		if(t->what == Body)
@@ -452,6 +455,7 @@ textfill(Text *t)
 			}
 		}
 		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
+		tsyhl(t, 0, t->fr.nchars, SYHL_ACTION_DEFAULT);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -503,6 +507,7 @@ textdelete(Text *t, uint q0, uint q1, int tofile)
 		}else
 			p0 = q0 - t->org;
 		frdelete(&t->fr, p0, p1);
+		tsyhl(t, p0, p1, SYHL_ACTION_TYPING);
 		textfill(t);
 	}
 	if(t->w){
@@ -833,7 +838,7 @@ texttype(Text *t, Rune r)
 			return;
 		nr = runestrlen(rp);
 		break;	/* fall through to normal insertion case */
-	case 0x1B:
+	case 0x1B: /* escape */
 		if(t->eq0 != ~0) {
 			if(t->eq0 <= t->q0)
 				textsetselect(t, t->eq0, t->q0);
@@ -997,6 +1002,120 @@ textframescroll(Text *t, int dl)
 	textsetorigin(t, q0, TRUE);
 }
 
+static
+int
+region(int a, int b)
+{
+	if(a < b)
+		return -1;
+	if(a == b)
+		return 0;
+	return 1;
+}
+
+// NOTE: copied from src/libframe/frselect.c to be able to call tsyhl in the loop
+void
+_local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is down */
+{
+	ulong p0, p1, q;
+	Point mp, pt0, pt1, qt;
+	int reg, b, scrled;
+
+	mp = mc->m.xy;
+	b = mc->m.buttons;
+
+	f->modified = 0;
+	frdrawsel(f, frptofchar(f, f->p0), f->p0, f->p1, 0);
+	tsyhl(t, f->p0, f->p1, SYHL_ACTION_DEFAULT);
+	p0 = p1 = frcharofpt(f, mp);
+	f->p0 = p0;
+	f->p1 = p1;
+	pt0 = frptofchar(f, p0);
+	pt1 = frptofchar(f, p1);
+	frdrawsel(f, pt0, p0, p1, 1);
+	tsyhl(t, p0, p1, SYHL_ACTION_SELECTING);
+	reg = 0;
+	do{
+		scrled = 0;
+		if(f->scroll){
+			if(mp.y < f->r.min.y){
+				(*f->scroll)(f, -(f->r.min.y-mp.y)/(int)f->font->height-1);
+				p0 = f->p1;
+				p1 = f->p0;
+				scrled = 1;
+			}else if(mp.y > f->r.max.y){
+				(*f->scroll)(f, (mp.y-f->r.max.y)/(int)f->font->height+1);
+				p0 = f->p0;
+				p1 = f->p1;
+				scrled = 1;
+			}
+			if(scrled){
+				if(reg != region(p1, p0))
+					q = p0, p0 = p1, p1 = q;	/* undo the swap that will happen below */
+				pt0 = frptofchar(f, p0);
+				pt1 = frptofchar(f, p1);
+				reg = region(p1, p0);
+			}
+		}
+		q = frcharofpt(f, mp);
+		if(p1 != q){
+			if(reg != region(q, p0)){	/* crossed starting point; reset */
+				if(reg > 0) {
+					frdrawsel(f, pt0, p0, p1, 0);
+					tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
+				}
+				else if(reg < 0) {
+					frdrawsel(f, pt1, p1, p0, 0);
+					tsyhl(t, p1, p0, SYHL_ACTION_DEFAULT);
+				}
+				p1 = p0;
+				pt1 = pt0;
+				reg = region(q, p0);
+				if(reg == 0) {
+					frdrawsel(f, pt0, p0, p1, 1);
+					tsyhl(t, p0, p1, SYHL_ACTION_SELECTING);
+				}
+			}
+			qt = frptofchar(f, q);
+			if(reg > 0){
+				if(q > p1) {
+					frdrawsel(f, pt1, p1, q, 1);
+					tsyhl(t, p1, q, SYHL_ACTION_SELECTING);
+				}
+				else if(q < p1) {
+					frdrawsel(f, qt, q, p1, 0);
+					tsyhl(t, q, p1, SYHL_ACTION_DEFAULT);
+				}
+			}else if(reg < 0){
+				if(q > p1) {
+					frdrawsel(f, pt1, p1, q, 0);
+					tsyhl(t, p1, q, SYHL_ACTION_DEFAULT);
+				}
+				else {
+					frdrawsel(f, qt, q, p1, 1);
+					tsyhl(t, q, p1, SYHL_ACTION_SELECTING);
+				}
+			}
+			p1 = q;
+			pt1 = qt;
+		}
+		f->modified = 0;
+		if(p0 < p1) {
+			f->p0 = p0;
+			f->p1 = p1;
+		}
+		else {
+			f->p0 = p1;
+			f->p1 = p0;
+		}
+		if(scrled)
+			(*f->scroll)(f, 0);
+		flushimage(f->display, 1);
+		if(!scrled)
+			readmouse(mc);
+		mp = mc->m.xy;
+	}while(mc->m.buttons == b);
+}
 
 void
 textselect(Text *t)
@@ -1034,7 +1153,7 @@ textselect(Text *t)
 	}
 	if(mouse->buttons == b){
 		t->fr.scroll = framescroll;
-		frselect(&t->fr, mousectl);
+		_local_frselect(&t->fr, mousectl, t);
 		/* horrible botch: while asleep, may have lost selection altogether */
 		if(selectq > t->file->b.nc)
 			selectq = t->org + t->fr.p0;
@@ -1086,6 +1205,7 @@ textselect(Text *t)
 				}else if(state != Paste){
 					paste(t, t, nil, TRUE, FALSE, nil, 0);
 					state = Paste;
+					tsyhl(t, q0, q1, SYHL_ACTION_DEFAULT);
 				}
 			}
 			textscrdraw(t);
@@ -1146,28 +1266,19 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 	}
 }
 
-static
-int
-region(int a, int b)
-{
-	if(a < b)
-		return -1;
-	if(a == b)
-		return 0;
-	return 1;
-}
-
 void
-selrestore(Frame *f, Point pt0, uint p0, uint p1)
+selrestore(Text *t, Frame *f, Point pt0, uint p0, uint p1)
 {
 	if(p1<=f->p0 || p0>=f->p1){
 		/* no overlap */
 		frdrawsel0(f, pt0, p0, p1, f->cols[BACK], f->cols[TEXT]);
+		tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 		return;
 	}
 	if(p0>=f->p0 && p1<=f->p1){
 		/* entirely inside */
 		frdrawsel0(f, pt0, p0, p1, f->cols[HIGH], f->cols[HTEXT]);
+		tsyhl(t, p0, p1, SYHL_ACTION_SELECTING);
 		return;
 	}
 
@@ -1176,16 +1287,19 @@ selrestore(Frame *f, Point pt0, uint p0, uint p1)
 	/* before selection */
 	if(p0 < f->p0){
 		frdrawsel0(f, pt0, p0, f->p0, f->cols[BACK], f->cols[TEXT]);
+		tsyhl(t, p0, f->p0, SYHL_ACTION_DEFAULT);
 		p0 = f->p0;
 		pt0 = frptofchar(f, p0);
 	}
 	/* after selection */
 	if(p1 > f->p1){
 		frdrawsel0(f, frptofchar(f, f->p1), f->p1, p1, f->cols[BACK], f->cols[TEXT]);
+		tsyhl(t, f->p1, p1, SYHL_ACTION_DEFAULT);
 		p1 = f->p1;
 	}
 	/* inside selection */
 	frdrawsel0(f, pt0, p0, p1, f->cols[HIGH], f->cols[HTEXT]);
+	tsyhl(t, p0, p1, SYHL_ACTION_SELECTING);
 }
 
 void
@@ -1223,24 +1337,31 @@ textsetselect(Text *t, uint q0, uint q1)
 	if(t->fr.p1<=p0 || p1<=t->fr.p0 || p0==p1 || t->fr.p1==t->fr.p0){
 		/* no overlap or too easy to bother trying */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p0), t->fr.p0, t->fr.p1, 0);
-		if(p0 != p1 || ticked)
+		tsyhl(t, t->fr.p0, t->fr.p1, SYHL_ACTION_DEFAULT);
+		if(p0 != p1 || ticked) {
 			frdrawsel(&t->fr, frptofchar(&t->fr, p0), p0, p1, 1);
+			tsyhl(t, p0, p1, SYHL_ACTION_SELECTING);
+		}
 		goto Return;
 	}
 	/* overlap; avoid unnecessary painting */
 	if(p0 < t->fr.p0){
 		/* extend selection backwards */
 		frdrawsel(&t->fr, frptofchar(&t->fr, p0), p0, t->fr.p0, 1);
+		tsyhl(t, p0, t->fr.p0, SYHL_ACTION_SELECTING);
 	}else if(p0 > t->fr.p0){
 		/* trim first part of selection */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p0), t->fr.p0, p0, 0);
+		tsyhl(t, t->fr.p0, p0, SYHL_ACTION_DEFAULT);
 	}
 	if(p1 > t->fr.p1){
 		/* extend selection forwards */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1), t->fr.p1, p1, 1);
+		tsyhl(t, t->fr.p1, p1, SYHL_ACTION_SELECTING);
 	}else if(p1 < t->fr.p1){
 		/* trim last part of selection */
 		frdrawsel(&t->fr, frptofchar(&t->fr, p1), p1, t->fr.p1, 0);
+		tsyhl(t, p1, t->fr.p1, SYHL_ACTION_DEFAULT);
 	}
 
     Return:
@@ -1258,7 +1379,7 @@ enum {
 };
 
 uint
-xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
+xselect(Text *t, Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
 {
 	uint p0, p1, q, tmp;
 	ulong msec;
@@ -1284,9 +1405,9 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 				frtick(f, pt0, 0);
 			if(reg != region(q, p0)){	/* crossed starting point; reset */
 				if(reg > 0)
-					selrestore(f, pt0, p0, p1);
+					selrestore(t, f, pt0, p0, p1);
 				else if(reg < 0)
-					selrestore(f, pt1, p1, p0);
+					selrestore(t, f, pt1, p1, p0);
 				p1 = p0;
 				pt1 = pt0;
 				reg = region(q, p0);
@@ -1299,10 +1420,10 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 					frdrawsel0(f, pt1, p1, q, col, display->white);
 
 				else if(q < p1)
-					selrestore(f, qt, q, p1);
+					selrestore(t, f, qt, q, p1);
 			}else if(reg < 0){
 				if(q > p1)
-					selrestore(f, pt1, p1, q);
+					selrestore(t, f, pt1, p1, q);
 				else
 					frdrawsel0(f, qt, q, p1, col, display->white);
 			}
@@ -1318,9 +1439,9 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 	&& abs(mp.x-mc->m.xy.x)<MINMOVE
 	&& abs(mp.y-mc->m.xy.y)<MINMOVE) {
 		if(reg > 0)
-			selrestore(f, pt0, p0, p1);
+			selrestore(t, f, pt0, p0, p1);
 		else if(reg < 0)
-			selrestore(f, pt1, p1, p0);
+			selrestore(t, f, pt1, p1, p0);
 		p1 = p0;
 	}
 	if(p1 < p0){
@@ -1331,7 +1452,7 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 	pt0 = frptofchar(f, p0);
 	if(p0 == p1)
 		frtick(f, pt0, 0);
-	selrestore(f, pt0, p0, p1);
+	selrestore(t, f, pt0, p0, p1);
 	/* restore tick */
 	if(f->p0 == f->p1)
 		frtick(f, frptofchar(f, f->p0), 1);
@@ -1346,13 +1467,12 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 	uint p0, p1;
 	int buts;
 
-	p0 = xselect(&t->fr, mousectl, high, &p1);
+	p0 = xselect(t, &t->fr, mousectl, high, &p1);
 	buts = mousectl->m.buttons;
 	if((buts & mask) == 0){
 		*q0 = p0+t->org;
 		*q1 = p1+t->org;
 	}
-
 	while(mousectl->m.buttons)
 		readmouse(mousectl);
 	return buts;
@@ -1637,6 +1757,7 @@ textsetorigin(Text *t, uint org, int exact)
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
 		frinsert(&t->fr, r, r+n, 0);
+		tsyhl(t, 0, n, SYHL_ACTION_DEFAULT);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
@@ -1644,8 +1765,10 @@ textsetorigin(Text *t, uint org, int exact)
 	textfill(t);
 	textscrdraw(t);
 	textsetselect(t, t->q0, t->q1);
-	if(fixup && t->fr.p1 > t->fr.p0)
+	if(fixup && t->fr.p1 > t->fr.p0) {
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
+		tsyhl(t, t->fr.p0, t->fr.p1, SYHL_ACTION_SELECTING);
+	}
 }
 
 void

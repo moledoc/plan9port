@@ -11,8 +11,40 @@
 #include <libsec.h>
 #include "dat.h"
 #include "fns.h"
+#include <string.h> /* strrchr */
 
 int	winid;
+
+// NOTE: find file extension
+// MAYBE: TODO: use runeeq instead of converting to char*
+int file_ext(Rune *rp, int nc) {
+	if (rp == NULL) {
+		return 0;
+	}
+
+	char *filename = runetobyte(rp, nc);
+
+	char *ext_str = strrchr(filename, '.');
+	if (!ext_str) {
+		return EXT_NONE;
+	}
+
+	ext_str += 1; // NOTE: step over '.'
+
+	int ext = EXT_NONE;
+	if (strcmp(ext_str, "c") == 0 || strcmp(ext_str, "h") == 0 || strcmp(ext_str, "cpp") == 0) {
+		ext = EXT_C;
+	} else if (strcmp(ext_str, "go") == 0) {
+		ext = EXT_GO;
+	} else if (strcmp(ext_str, "py") == 0) {
+		ext = EXT_PYTHON;
+	} else if (strcmp(ext_str, "java") == 0) {		
+		ext = EXT_JAVA;
+	}
+	return ext;
+}
+
+
 
 void
 wininit(Window *w, Window *clone, Rectangle r)
@@ -493,6 +525,7 @@ winsettag1(Window *w)
 		bufread(&w->tag.file->b, 0, old, w->tag.file->b.nc);
 		old[w->tag.file->b.nc] = '\0';
 	}
+	w->body.extension = file_ext(w->body.file->name, w->body.file->nname);
 
 	/* compute the text for the whole tag, replacing current only if it differs */
 	new = runemalloc(w->body.file->nname+100);

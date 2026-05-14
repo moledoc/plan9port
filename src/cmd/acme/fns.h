@@ -107,3 +107,5 @@ Range range(int, int);
 #define	runemove(a, b, c)	memmove((a), (b), (c)*sizeof(Rune))
 
 int	ismtpt(char*);
+
+void tsyhl(Text *, uint, uint, enum SYHL_ACTION);

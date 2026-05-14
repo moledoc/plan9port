@@ -56,6 +56,10 @@ typedef	struct	Timer Timer;
 typedef	struct	Window Window;
 typedef	struct	Xfid Xfid;
 
+// NOTE: define additional colors for syntax highlighting
+#define		DGrey 0x808080FF
+#define		DYellowGold 0xFFC400FF
+
 struct Runestr
 {
 	Rune	*r;
@@ -171,6 +175,34 @@ enum	/* Text.what */
 	Body
 };
 
+enum	/* Text.extension */
+{
+	EXT_NONE,
+	EXT_C,
+	EXT_GO,
+	EXT_PYTHON,
+	EXT_JAVA,
+	EXT_COUNT
+};
+
+enum { /* syntax_highlighting tokens */
+	SYHL_CODETAG,
+	SYHL_KEYWORD,
+	SYHL_NUMBER,
+	SYHL_QUOTE,
+	SYHL_COMMENT,
+	SYHL_ESCAPE,
+	SYHL_PAREN,
+	SYHL_NCOL
+};
+
+enum SYHL_ACTION { /* syhl action */
+	SYHL_ACTION_DEFAULT,
+	SYHL_ACTION_TYPING,
+	SYHL_ACTION_SELECTING,
+	SYHL_ACTION_COUNT
+};
+
 struct Text
 {
 	File		*file;
@@ -180,6 +212,7 @@ struct Text
 	uint	q0;
 	uint	q1;
 	int	what;
+	int	extension;
 	int	tabstop;
 	Window	*w;
 	Rectangle scrollr;
@@ -220,6 +253,7 @@ void		textreset(Text*);
 int		textresize(Text*, Rectangle, int);
 void		textscrdraw(Text*);
 void		textscroll(Text*, int);
+void		_local_frselect(Frame*, Mousectl*, Text*); // NOTE: copied from src/libframe/frselect.c
 void		textselect(Text*);
 int		textselect2(Text*, uint*, uint*, Text**);
 int		textselect23(Text*, uint*, uint*, Image*, int);
@@ -549,6 +583,7 @@ extern char			*acmeshell;
 extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
+extern Image		*syhlcols[SYHL_NCOL];
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;

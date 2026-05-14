@@ -1048,11 +1048,28 @@ iconinit(void)
 		tagcols[HTEXT] = display->black;
 
 		/* Yellow */
+		/* NOTE: original
 		textcols[BACK] = allocimagemix(display, DPaleyellow, DWhite);
 		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
 		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 		textcols[TEXT] = display->black;
 		textcols[HTEXT] = display->black;
+		*/
+
+		/* White */
+		textcols[BACK] = allocimagemix(display, DWhite, DWhite);
+		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
+		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
+		textcols[TEXT] = display->black;
+		textcols[HTEXT] = display->black;
+
+		syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowGold);
+		syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlue);
+		syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMagenta);
+		syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedgreen);
+		syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
+		syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
+		syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);
