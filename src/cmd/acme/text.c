@@ -12,9 +12,6 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
-#include "keywords.h"
-#include <stdio.h> // REMOVEME:
-#include <time.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -23,635 +20,6 @@ static Rune Ldot[] = { '.', 0 };
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
 };
-
-Image 	*syhlcols[SYHL_NCOL];
-int syntax_highlight_enabled = 1;
-
-int levenshtein(const char *s1, const char *s2) {
-    int len1 = strlen(s1);
-    int len2 = strlen(s2);
-
-    // allocate DP table
-    int **dp = (int **)malloc((len1 + 1) * sizeof(int *));
-    for (int i = 0; i <= len1; i++) {
-        dp[i] = (int *)malloc((len2 + 1) * sizeof(int));
-    }
-
-    // base cases
-    for (int i = 0; i <= len1; i++) dp[i][0] = i;
-    for (int j = 0; j <= len2; j++) dp[0][j] = j;
-
-    // fill table
-    for (int i = 1; i <= len1; i++) {
-        for (int j = 1; j <= len2; j++) {
-            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
-
-            dp[i][j] = min(
-                dp[i - 1][j] + 1,      // deletion
-                dp[i][j - 1] + 1      // insertion
-            );
-            dp[i][j] = min(
-                dp[i][j],
-                dp[i - 1][j - 1] + cost // substitution
-            );
-        }
-    }
-
-    int result = dp[len1][len2];
-
-    // free memory
-    for (int i = 0; i <= len1; i++) {
-        free(dp[i]);
-    }
-    free(dp);
-
-    return result;
-}
-
-void lev_dist_1(char **kws, int kws_len, char *buf, Image **text, int *should_draw) {
-	if (kws == NULL || kws_len == 0 || text == NULL || should_draw == NULL) {
-		return;
-	}
-	for (int ii=0; ii<kws_len; ii++){
-		int lev = levenshtein(kws[ii], buf);
-		if (lev == 1) {
-			*text = textcols[TEXT];
-			*should_draw = 1;
-			break;
-		}
-	}
-}
-
-Token *lex_line(Frame *f, Point pt, char* line, int line_len, int extension) {
-
-	Token *head = NULL;
-	Token *tail = NULL;
-
-	static char offset_buf[1024] = {0};
-	static char buf[128] = {0};
-	int buf_len = 0;
-	int offset = 0;
-	int offset_s = offset;
-	int should_draw = 0;
-
-	for (char *ptr = line; offset < line_len && *ptr != '\0'; ptr++, offset++) {
-
-		memset(offset_buf, 0, offset);
-		memset(buf, 0, sizeof(buf));
-
-		should_draw = 0;
-		offset_s = offset;
-		Image *text = NULL;
-		enum TokenType typ = SYHL_NORMAL;
-
-		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z' || *ptr == '_') {
-			offset_s = offset;
-			offset++;
-			ptr++;
-			for (; offset < line_len && *ptr != '\0' && 
-				(('a' <= *ptr && *ptr <= 'z') ||
-					('A' <= *ptr && *ptr <= 'Z') || 
-					('0' <= *ptr && *ptr <= '9') || 
-					*ptr == '_' || *ptr == '-'); ptr++, offset++) {}
-
-			buf_len = offset-offset_s;
-			memcpy(buf, line+offset_s, buf_len);
-
-			if (in_word_set_codetags(buf, buf_len)) {
-				text = syhlcols[SYHL_CODETAG];
-				typ = SYHL_CODETAG;
-				should_draw = 1;
-			}
-
-			switch (extension) {
-				case EXT_C:
-					if (in_word_set_c(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						typ = SYHL_KEYWORD;
-						should_draw = 1;
-					}
-					break;
-				case EXT_GO:
-					if (in_word_set_go(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						typ = SYHL_KEYWORD;
-						should_draw = 1;
-					}
-					break;
-				case EXT_PYTHON:
-					if (in_word_set_python(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						typ = SYHL_KEYWORD;
-						should_draw = 1;
-					}
-					break;
-				case EXT_JAVA:
-					if (in_word_set_java(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						typ = SYHL_KEYWORD;
-						should_draw = 1;
-					}
-					break;					
-			}
-
-			// NOTE: we passed end; step back
-			offset--; ptr--;
-
-		} else if ('0' <= *ptr && *ptr <= '9') {
-			offset_s = offset;
-			offset++;
-			ptr++;
-			for (; offset < line_len && *ptr != '\0' && 
-				('0' <= *ptr && *ptr <= '9' || 
-					*ptr == '.' ||
-					// NOTE: include a-zA-Z, so that invalid nr will be filtered out; eg 0x7 - valid, 9l is not
-					('a' <= *ptr && *ptr <= 'z') ||
-					('A' <= *ptr && *ptr <= 'Z')); ptr++, offset++) {}
-
-			buf_len = offset-offset_s;
-			memcpy(buf, line+offset_s, buf_len);
-
-			char *end;
-			strtold(buf, &end);
-			if (buf != end && *end == '\0') {
-				should_draw = 1;
-				text = syhlcols[SYHL_NUMBER];
-				typ = SYHL_NUMBER;
-			}
-
-			// NOTE: we passed end; step back
-			offset--; ptr--;
-		} else if (*ptr == '"' || *ptr == '\'') {
-			offset_s = offset;
-			should_draw = 1;
-			buf_len = 1;
-			buf[0] = *ptr;
-			text = syhlcols[SYHL_QUOTE];
-			typ = SYHL_QUOTE;
-		} else if (*ptr == '\\') {
-			offset_s = offset;
-			buf_len = 1;
-			buf[0] = *ptr;
-			if (offset+1 < line_len) {
-				buf[1] = *(ptr+1);
-				buf_len += 1;
-				should_draw = 1;
-			}
-			text = syhlcols[SYHL_ESCAPE];
-			typ = SYHL_ESCAPE;
-			// NOTE: step over escape end
-
-			offset++; ptr++;
-		} else if (*ptr == '(' || *ptr == ')' || 
-					*ptr == '[' || *ptr == ']' || 
-					*ptr == '{' || *ptr == '}') {
-			offset_s = offset;
-			should_draw = 1;
-			buf[0] = *ptr;
-			buf_len = 1;
-			text = syhlcols[SYHL_PAREN];
-			typ = SYHL_PAREN;
-		} else if ((*ptr == '/' && (offset+1 < line_len && *(ptr+1) == '/' || *(ptr+1) == '*') || (offset+1 < line_len && *ptr == '*' && *(ptr+1) == '/')) && (extension == EXT_C || extension == EXT_GO || extension == EXT_JAVA)) {
-			offset_s = offset;
-			buf_len = 1;
-			buf[0] = *ptr;
-			if (offset+1 < line_len) {
-				buf[1] = *(ptr+1);
-				buf_len += 1;
-				should_draw = 1;
-			}
-			text = syhlcols[SYHL_COMMENT];
-			typ = SYHL_COMMENT;
-			// NOTE: step over comment end
-			offset++; ptr++;
-		} else if (extension == EXT_PYTHON && *ptr == '#') {
-			offset_s = offset;
-			buf_len = 1;
-			buf[0] = *ptr;
-			should_draw = 1;
-			text = syhlcols[SYHL_COMMENT];
-			typ = SYHL_COMMENT;
-			// NOTE: step over comment end
-			offset++; ptr++;
-		}
-
-		if (!should_draw || text == NULL) {
-			continue;
-		}
-
-		memcpy(offset_buf, line, offset_s);
-		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
-		int bufwid_buf = stringnwidth(f->font, buf, buf_len);
-
-		ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
-		ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
-
-		Token *tk = calloc(1, sizeof(Token));
-
-		tk->p0 = p0;
-		tk->p1 = p1;
-		tk->s = calloc(buf_len+1, sizeof(char));
-		memcpy(tk->s, buf, buf_len);
-		tk->s_len = buf_len;
-		tk->text = text;
-		tk->typ = typ;
-
-		if (head == NULL) {
-			head = tk;
-			tail = tk;
-		} else {
-			tail->next = tk;
-			tail = tk;
-		}
-	}
-	return head;	
-}
-
-void free_tokens(Token *tk) {
-	while (tk != NULL) {
-		Token *me = tk;
-		tk = tk->next;
-		if (me->s) free(me->s);
-		free(me);
-	}
-}
-
-void print_tokens(Token *tk) {
-	while (tk != NULL) {
-		printf("Token: {p0=%u, p1=%u, s=%s, typ=%d, next=%p}\n", tk->p0, tk->p1, tk->s, tk->typ, tk->next);
-		tk = tk->next;
-	}
-}
-
-void tokenizer(Text *t, Rune *r, uint p0, uint p1) {
-	clock_t begin = clock();
-
-	if (t->what != Body || !syntax_highlight_enabled || t->fr.nbox == 0) {
-		frinsert(&t->fr, r, r+(p1-p0), p0);
-		return;
-	}
-
-
-	Frbox *b;
-	int nb;
-	Token *tokens = NULL;
-	Token *tail = NULL;
-
-	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
-	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
-		_frcklinewrap(&t->fr, &pt, b);
-		if(!t->fr.noredraw && b->nrune >= 0) {
-			uint pp0 = frcharofpt(&t->fr, pt);
-			uint pp1 = frcharofpt(&t->fr, (Point){.x=pt.x+b->wid, .y=pt.y});
-			if (!( // if not following, then skip line
-				pp0 <= p0 && p0 <= pp1 || // drawing starts on this line
-				pp0 <= p1 && p1 <= pp1 || // drawing ends on this line
-				p0 <= pp0 && pp1 <= p1 // full line drawn
-			)) {
-				goto Continue;
-			}
-			Token *tk = lex_line(&t->fr, pt, (char*)b->ptr, b->nrune, t->extension);
-			if (tk == NULL) goto Continue;
-			if (tokens == NULL) {
-				tokens = tk;
-				tail = tk;
-			} else {
-				tail->next = tk;
-				while (tk->next != NULL) {
-					tk = tk->next;
-				}
-				tail = tk;
-			}
-		}
-		Continue:
-		pt.x += b->wid;
-	}
-
-
-	if (tokens == NULL) {	
-		frinsert(&t->fr, r, r+(p1-p0), p0);
-		goto CleanTokens;
-	}
-
-	Token *cur_token = tokens;
-	uint pp = p0;
-	while (cur_token != NULL) {
-		int diff = cur_token->p0 - pp;
-		printf("HERE: %u %u %u %d %u %u %u\n", p0, p1, pp, diff, pp-p0, pp-p0+diff, cur_token->p0);
-		if (diff < 0) {
-			break;
-		} else if (diff == 0 || diff != 0 && pp > p1) {
-			Point pptt = frptofchar(&t->fr, pp);
-			stringnbg(t->fr.b, pptt, cur_token->text, ZP, t->fr.font, cur_token->s, cur_token->s_len, textcols[BACK], ZP);
-			pp += cur_token->s_len;
-			cur_token = cur_token->next;
-		} else if (pp < p1) {
-			frinsert(&t->fr, r+(pp-p0),r+(pp-p0)+diff, pp);
-			pp += diff;
-		}
-	}
-	if (pp < p1) {
-		frinsert(&t->fr, r+(pp-p0),r+p1, pp);	
-	}
-
-	CleanTokens:
-	print_tokens(tokens);
-	free_tokens(tokens);
-
-
-
-			clock_t end = clock();
-			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-			printf("tokenizer spent1: %f sec\n", time_spent);
-}
-
-// FIXME: moving with arrow keys doesn't properly redraw tick/cursor. Backspace to prev line also doesn't redraw the cursor.
-// NOTE: levensthein distance check is expensive - do only when typing, i.e. inserting/deleting characters.
-// KNOWN: the problem of not clearing syhl is also present for numbers and escape - that's because we don't redraw the chars after insertion/deletion. To do that, we'd need to redraw every char/word essentially which is bit too expensive. So this is left as known issue for now.
-// KNOWN: execute `Edit =` twice - on the second time, the first line will be unselected, but no syhl on col number happens.
-
-void _frsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action, uint start_sel, uint end_sel) {
-
-	static char offset_buf[1024] = {0};
-	static char buf[128] = {0};
-	int buf_len = 0;
-	int offset = 0;
-	int offset_s = offset;
-	int should_draw = 0;
-
-	// printf("HERE: %s %d\n", (char *)b->ptr, action);
-
-	for (char *ptr = (char *)b->ptr; offset < b->nrune && *ptr != '\0'; ptr++, offset++) {
-
-		memset(offset_buf, 0, offset);
-		memset(buf, 0, sizeof(buf));
-
-		should_draw = 0;
-		offset_s = offset;
-		Image *text = NULL;
-
-		if ('a' <= *ptr && *ptr <= 'z' || 'A' <= *ptr && *ptr <= 'Z' || *ptr == '_') {
-			offset_s = offset;
-			offset++;
-			ptr++;
-			for (; offset < b->nrune && *ptr != '\0' && 
-				(('a' <= *ptr && *ptr <= 'z') ||
-					('A' <= *ptr && *ptr <= 'Z') || 
-					('0' <= *ptr && *ptr <= '9') || 
-					*ptr == '_' || *ptr == '-'); ptr++, offset++) {}
-
-			buf_len = offset-offset_s;
-			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
-
-			if (in_word_set_codetags(buf, buf_len)) {
-				text = syhlcols[SYHL_CODETAG];
-				should_draw = 1;
-			} else if (action == SYHL_ACTION_TYPING) {
-				lev_dist_1((char **)keywords_codetags, sizeof(keywords_codetags)/sizeof(keywords_codetags[0]), buf, &text, &should_draw);
-				for (int ii=0; 0 && ii<keywords_codetags_count; ii++){
-					int lev = levenshtein(keywords_codetags[ii], buf);
-					if (lev == 1) {
-						text = textcols[TEXT];
-						should_draw = 1;
-						break;
-					}
-				}
-			}
-
-			switch (extension) {
-				case EXT_C:
-					if (in_word_set_c(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
-					} else if (action == SYHL_ACTION_TYPING) {
-						lev_dist_1((char **)keywords_c, sizeof(keywords_c)/sizeof(keywords_c[0]), buf, &text, &should_draw);
-						for (int ii=0; 0 && ii<keywords_c_count; ii++){
-							int lev = levenshtein(keywords_c[ii], buf);
-							if (lev == 1) {
-								text = textcols[TEXT];
-								should_draw = 1;
-								break;
-							}
-						}
-					}
-					break;
-				case EXT_GO:
-					if (in_word_set_go(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
-					} else if (action == SYHL_ACTION_TYPING) {
-						lev_dist_1((char **)keywords_go, sizeof(keywords_go)/sizeof(keywords_go[0]), buf, &text, &should_draw);
-						for (int ii=0; 0 && ii<keywords_go_count; ii++){
-							int lev = levenshtein(keywords_go[ii], buf);
-							if (lev == 1) {
-								text = textcols[TEXT];
-								should_draw = 1;
-								break;
-							}
-						}
-					}
-					break;
-				case EXT_PYTHON:
-					if (in_word_set_python(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
-					} else if (action == SYHL_ACTION_TYPING) {
-						lev_dist_1((char **)keywords_python, sizeof(keywords_python)/sizeof(keywords_python[0]), buf, &text, &should_draw);
-						for (int ii=0; 0 && ii<keywords_python_count; ii++){
-							int lev = levenshtein(keywords_python[ii], buf);
-							if (lev == 1) {
-								text = textcols[TEXT];
-								should_draw = 1;
-								break;
-							}
-						}
-					}
-					break;
-				case EXT_JAVA:
-					if (in_word_set_java(buf, buf_len)) {
-						text = syhlcols[SYHL_KEYWORD];
-						should_draw = 1;
-					} else if (action == SYHL_ACTION_TYPING) {
-						lev_dist_1((char **)keywords_java, sizeof(keywords_java)/sizeof(keywords_java[0]), buf, &text, &should_draw);
-						for (int ii=0; 0 && ii<keywords_java_count; ii++){
-							int lev = levenshtein(keywords_java[ii], buf);
-							if (lev == 1) {
-								text = textcols[TEXT];
-								should_draw = 1;
-								break;
-							}
-						}
-					}
-					break;					
-			}
-
-			// NOTE: we passed end; step back
-			offset--; ptr--;
-
-		} else if ('0' <= *ptr && *ptr <= '9') {
-			offset_s = offset;
-			offset++;
-			ptr++;
-			for (; offset < b->nrune && *ptr != '\0' && 
-				('0' <= *ptr && *ptr <= '9' || 
-					*ptr == '.' ||
-					// NOTE: include a-zA-Z, so that invalid nr will be filtered out; eg 0x7 - valid, 9l is not
-					('a' <= *ptr && *ptr <= 'z') ||
-					('A' <= *ptr && *ptr <= 'Z')); ptr++, offset++) {}
-
-			buf_len = offset-offset_s;
-			memcpy(buf, (char *)b->ptr+offset_s, buf_len);
-
-			char *end;
-			strtold(buf, &end);
-			if (buf != end && *end == '\0') {
-				should_draw = 1;
-				text = syhlcols[SYHL_NUMBER];
-			}
-
-			// NOTE: we passed end; step back
-			offset--; ptr--;
-		} else if (*ptr == '"' || *ptr == '\'') {
-			offset_s = offset;
-			should_draw = 1;
-			buf_len = 1;
-			buf[0] = *ptr;
-			text = syhlcols[SYHL_QUOTE];
-		} else if (*ptr == '\\') {
-			offset_s = offset;
-			buf_len = 1;
-			buf[0] = *ptr;
-			if (offset+1 < b->nrune) {
-				buf[1] = *(ptr+1);
-				buf_len += 1;
-				should_draw = 1;
-			}
-			text = syhlcols[SYHL_ESCAPE];
-			// NOTE: step over escape end
-
-			offset++; ptr++;
-		} else if (*ptr == '(' || *ptr == ')' || 
-					*ptr == '[' || *ptr == ']' || 
-					*ptr == '{' || *ptr == '}') {
-			offset_s = offset;
-			should_draw = 1;
-			buf[0] = *ptr;
-			buf_len = 1;
-			text = syhlcols[SYHL_PAREN];
-		} else if ((*ptr == '/' && (offset+1 < b->nrune && *(ptr+1) == '/' || *(ptr+1) == '*') || (offset+1 < b->nrune && *ptr == '*' && *(ptr+1) == '/')) && (extension == EXT_C || extension == EXT_GO || extension == EXT_JAVA)) {
-			offset_s = offset;
-			buf_len = 1;
-			buf[0] = *ptr;
-			if (offset+1 < b->nrune) {
-				buf[1] = *(ptr+1);
-				buf_len += 1;
-				should_draw = 1;
-			}
-			text = syhlcols[SYHL_COMMENT];
-			// NOTE: step over comment end
-			offset++; ptr++;
-		} else if (extension == EXT_PYTHON && *ptr == '#') {
-			offset_s = offset;
-			buf_len = 1;
-			buf[0] = *ptr;
-			should_draw = 1;
-			text = syhlcols[SYHL_COMMENT];
-			// NOTE: step over comment end
-			offset++; ptr++;
-		}
-
-		if (!should_draw || text == NULL) {
-			continue;
-		}
-
-
-		memcpy(offset_buf, (char *)b->ptr, offset_s);
-		int bufwid_offset = stringnwidth(f->font, offset_buf, offset_s);
-		int bufwid_buf = stringnwidth(f->font, buf, buf_len);
-
-		// stringn(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, syhlcols[SYHL_CLEAN_FG], ZP, f->font, buf, buf_len);
-		stringn(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len);
-		continue;
-
-		ulong p0 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset, .y=pt.y});
-		ulong p1 = frcharofpt(f, (Point){.x=pt.x+bufwid_offset+bufwid_buf, .y=pt.y});
-
-// printf("---- f->p0=%lu f->p1=%lu vs p0=%lu p1=%lu vs f->p0=%u f->p1=%u action=%d buf=%s\n", f->p0, f->p1, p0, p1, f->p0, f->p1, action, buf);
-		if (action == SYHL_ACTION_SELECTING && (start_sel <= p0 && p1 <= end_sel || f->p0 <= p0 && p1 <= f->p1)) { // everything in selection
-			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[HIGH], ZP);
-			continue;	
-		} else if (action == SYHL_ACTION_SELECTING && (start_sel <= p0 && p0 <= end_sel || start_sel <= p1 && p1 <= end_sel) && start_sel != end_sel && f->p0 != f->p1) { // partial selection
-
-			// NOTE: inspiration from selrestore
-			/* they now are known to overlap */
-			/* before selection */
-			int diff_before = 0;
-			int diff_after = 0;
-			if(p0 < start_sel && start_sel <= p1 && p1 <= end_sel){
-				diff_before = start_sel-p0;
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, diff_before, textcols[BACK], ZP);
-			}
-			/* after selection */
-			if(end_sel < p1 && start_sel <= p0 && p0 <= end_sel){
-				diff_after = p1-end_sel;
-				int bufwid_until_after = stringnwidth(f->font, buf, buf_len-diff_after);
-				stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_after, .y=pt.y}, text, ZP, f->font, buf+(buf_len-diff_after), diff_after, textcols[BACK], ZP);
-			}
-			/* inside selection */
-			int bufwid_until_before = stringnwidth(f->font, buf, diff_before);
-			stringnbg(f->b, (Point){.x=pt.x+bufwid_offset+bufwid_until_before, .y=pt.y}, text, ZP, f->font, buf+diff_before, buf_len-(diff_before+diff_after), textcols[HIGH], ZP);
-		} else if (
-			action == SYHL_ACTION_DRAW_FRAME && (f->p0 == f->p1 || f->p0 != f->p1 && (p0-1 > f->p1 || f->p0 > p1+1)) ||
-			action == SYHL_ACTION_TYPING ||
-			action == SYHL_ACTION_CLEAR_SELECTION && f->p0 != f->p1
-		) { // not in selection
-		stringnbg(f->b, (Point){.x=pt.x+bufwid_offset, .y=pt.y}, text, ZP, f->font, buf, buf_len, textcols[BACK], ZP);
-		}
-	}
-}
-
-void tsyhl(Text *t, enum SYHL_ACTION action, uint start_draw, uint end_draw) {
-	clock_t begin = clock();
-
-	if (t->what != Body || !syntax_highlight_enabled) {
-		return;
-	}
-
-	Frbox *b;
-	int nb;
-
-	uint start_sel = t->fr.p0;
-	uint end_sel = t->fr.p1;
-
-	Point pt = frptofchar(&t->fr, 0); // NOTE: get the starting Point of the frame
-	for(nb=0,b=t->fr.box; nb<t->fr.nbox; nb++, b++){
-		_frcklinewrap(&t->fr, &pt, b);
-		if(!t->fr.noredraw && b->nrune >= 0) {
-			uint p0 = frcharofpt(&t->fr, pt);
-			uint p1 = frcharofpt(&t->fr, (Point){.x=pt.x+b->wid, .y=pt.y});
-			if (!( // if not following, then skip line
-				p0 <= start_draw && start_draw <= p1 || // drawing starts on this line
-				p0 <= end_draw && end_draw <= p1 || // drawing ends on this line
-				start_draw <= p0 && p1 <= end_draw // full line drawn
-			)) {
-				goto Continue;
-			}
-			if (action == SYHL_ACTION_SELECTING) {
-				start_sel = start_draw;
-				end_sel = end_draw;
-			}
-			_frsyhl(&t->fr, pt, b, t->extension, action, start_sel, end_sel);
-		}
-		Continue:
-		pt.x += b->wid;
-	}
-
-			clock_t end = clock();
-			double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-			// printf("_frsyhl spent1: %f sec\n", time_spent);
-}
-
-
 
 void
 textinit(Text *t, File *f, Rectangle r, Reffont *rf, Image *cols[NCOL])
@@ -925,8 +293,7 @@ textload(Text *t, uint q0, char *file, int setqid)
 			t->org += n;
 		else if(q <= t->org+t->fr.nchars) {
 			frinsert(&t->fr, rp, rp+n, q-t->org);
-			tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
-			// tokenizer(t, rp, q-t->org, q-t->org+n);
+			tsyhl(t, q-t->org, q-t->org+n, SYHL_ACTION_DEFAULT);
 		}
 		if(t->fr.lastlinefull)
 			break;
@@ -942,12 +309,9 @@ textload(Text *t, uint q0, char *file, int setqid)
 		}
 		textsetselect(u, q0, q0);
 	}
-
 	if(nulls)
 		warning(nil, "%s: NUL bytes elided\n", file);
 	free(d);
-
-
 	return q1-q0;
 
     Rescue:
@@ -1036,9 +400,8 @@ textinsert(Text *t, uint q0, Rune *r, uint n, int tofile)
 	if(q0 < t->org)
 		t->org += n;
 	else if(q0 <= t->org+t->fr.nchars) {
-		// tokenizer(t, r, q0-t->org, q0-t->org+n);
 		frinsert(&t->fr, r, r+n, q0-t->org);
-		tsyhl(t, SYHL_ACTION_TYPING, q0-t->org, q0-t->org+n);
+		tsyhl(t, q0-t->org, q0-t->org+n, SYHL_ACTION_TYPING);
 	}
 	if(t->w){
 		c = 'i';
@@ -1091,9 +454,8 @@ textfill(Text *t)
 					break;
 			}
 		}
-		// tokenizer(t, rp, t->fr.nchars, t->fr.nchars+i);
 		frinsert(&t->fr, rp, rp+i, t->fr.nchars);
-		tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+		tsyhl(t, 0, t->fr.nchars, SYHL_ACTION_DEFAULT);
 	}while(t->fr.lastlinefull == FALSE);
 	fbuffree(rp);
 }
@@ -1145,7 +507,7 @@ textdelete(Text *t, uint q0, uint q1, int tofile)
 		}else
 			p0 = q0 - t->org;
 		frdelete(&t->fr, p0, p1);
-		tsyhl(t, SYHL_ACTION_TYPING, p0, p1);
+		tsyhl(t, p0, p1, SYHL_ACTION_TYPING);
 		textfill(t);
 	}
 	if(t->w){
@@ -1415,10 +777,6 @@ texttype(Text *t, Rune r)
 	 	typecommit(t);
 		undo(t, nil, nil, FALSE, 0, nil, 0);
 		return;
-	case Kcmd+'.':	/* %-.: toggle syntax highlighting */
-	 	syntax_highlight_enabled = (syntax_highlight_enabled+1)%2;
-		textredraw(t, t->fr.r, t->fr.font, t->fr.b, Dx(t->all)); // FIXME: over-draws the scrollbar, need to tweak the rectangle or redraw scrollbar
-		return;
 
 	Tagdown:
 		/* expand tag to show all text */
@@ -1668,14 +1026,14 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 
 	f->modified = 0;
 	frdrawsel(f, frptofchar(f, f->p0), f->p0, f->p1, 0);
-	tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p0, f->p1);
+	tsyhl(t, f->p0, f->p1, SYHL_ACTION_DEFAULT);
 	p0 = p1 = frcharofpt(f, mp);
 	f->p0 = p0;
 	f->p1 = p1;
 	pt0 = frptofchar(f, p0);
 	pt1 = frptofchar(f, p1);
 	frdrawsel(f, pt0, p0, p1, 1);
-	tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
+	tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 	reg = 0;
 	do{
 		scrled = 0;
@@ -1704,38 +1062,38 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 			if(reg != region(q, p0)){	/* crossed starting point; reset */
 				if(reg > 0) {
 					frdrawsel(f, pt0, p0, p1, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
+					tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 				}
 				else if(reg < 0) {
 					frdrawsel(f, pt1, p1, p0, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, p0);
+					tsyhl(t, p1, p0, SYHL_ACTION_DEFAULT);
 				}
 				p1 = p0;
 				pt1 = pt0;
 				reg = region(q, p0);
 				if(reg == 0) {
 					frdrawsel(f, pt0, p0, p1, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+					tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 				}
 			}
 			qt = frptofchar(f, q);
 			if(reg > 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, p1, q);
+					tsyhl(t, p1, q, SYHL_ACTION_DEFAULT);
 				}
 				else if(q < p1) {
 					frdrawsel(f, qt, q, p1, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, q, p1);
+					tsyhl(t, q, p1, SYHL_ACTION_DEFAULT);
 				}
 			}else if(reg < 0){
 				if(q > p1) {
 					frdrawsel(f, pt1, p1, q, 0);
-					tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, q);
+					tsyhl(t, p1, q, SYHL_ACTION_DEFAULT);
 				}
 				else {
 					frdrawsel(f, qt, q, p1, 1);
-					tsyhl(t, SYHL_ACTION_SELECTING, q, p1);
+					tsyhl(t, q, p1, SYHL_ACTION_DEFAULT);
 				}
 			}
 			p1 = q;
@@ -1752,17 +1110,12 @@ _local_frselect(Frame *f, Mousectl *mc, Text *t)	/* when called, button 1 is dow
 		}
 		if(scrled)
 			(*f->scroll)(f, 0);
-		// NOTE: redraw, because some incremental checks will unselect syhl. But can't only rely on this, because otherwise moving back and forth with the selection doesn't draw syhl.
-		// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, 0, f->p0-1);
-		// tsyhl(t, SYHL_ACTION_SELECTING, f->p0, f->p1);
-		// tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p1+1, f->nchars);
 		flushimage(f->display, 1);
 		if(!scrled)
 			readmouse(mc);
 		mp = mc->m.xy;
 	}while(mc->m.buttons == b);
 }
-
 
 void
 textselect(Text *t)
@@ -1852,7 +1205,7 @@ textselect(Text *t)
 				}else if(state != Paste){
 					paste(t, t, nil, TRUE, FALSE, nil, 0);
 					state = Paste;
-					tsyhl(t, SYHL_ACTION_SELECTING, q0, q1);
+					tsyhl(t, q0, q1, SYHL_ACTION_DEFAULT);
 				}
 			}
 			textscrdraw(t);
@@ -1897,9 +1250,9 @@ textshow(Text *t, uint q0, uint q1, int doselect)
 				tsd = TRUE;
 		}
 	}
-	if(tsd) {
+	if(tsd)
 		textscrdraw(t);
-	} else{
+	else{
 		if(t->w->nopen[QWevent] > 0)
 			nl = 3*t->fr.maxlines/4;
 		else
@@ -1919,13 +1272,13 @@ selrestore(Text *t, Frame *f, Point pt0, uint p0, uint p1)
 	if(p1<=f->p0 || p0>=f->p1){
 		/* no overlap */
 		frdrawsel0(f, pt0, p0, p1, f->cols[BACK], f->cols[TEXT]);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, p1);
+		tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 		return;
 	}
 	if(p0>=f->p0 && p1<=f->p1){
 		/* entirely inside */
 		frdrawsel0(f, pt0, p0, p1, f->cols[HIGH], f->cols[HTEXT]);
-		tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+		tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 		return;
 	}
 
@@ -1934,19 +1287,19 @@ selrestore(Text *t, Frame *f, Point pt0, uint p0, uint p1)
 	/* before selection */
 	if(p0 < f->p0){
 		frdrawsel0(f, pt0, p0, f->p0, f->cols[BACK], f->cols[TEXT]);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p0, f->p0);
+		tsyhl(t, p0, f->p0, SYHL_ACTION_DEFAULT);
 		p0 = f->p0;
 		pt0 = frptofchar(f, p0);
 	}
 	/* after selection */
 	if(p1 > f->p1){
 		frdrawsel0(f, frptofchar(f, f->p1), f->p1, p1, f->cols[BACK], f->cols[TEXT]);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, f->p1, p1);
+		tsyhl(t, f->p1, p1, SYHL_ACTION_DEFAULT);
 		p1 = f->p1;
 	}
 	/* inside selection */
 	frdrawsel0(f, pt0, p0, p1, f->cols[HIGH], f->cols[HTEXT]);
-	tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+	tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 }
 
 void
@@ -1984,10 +1337,10 @@ textsetselect(Text *t, uint q0, uint q1)
 	if(t->fr.p1<=p0 || p1<=t->fr.p0 || p0==p1 || t->fr.p1==t->fr.p0){
 		/* no overlap or too easy to bother trying */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p0), t->fr.p0, t->fr.p1, 0);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, t->fr.p0, t->fr.p1);
+		tsyhl(t, t->fr.p0, t->fr.p1, SYHL_ACTION_DEFAULT);
 		if(p0 != p1 || ticked) {
 			frdrawsel(&t->fr, frptofchar(&t->fr, p0), p0, p1, 1);
-			tsyhl(t, SYHL_ACTION_SELECTING, p0, p1);
+			tsyhl(t, p0, p1, SYHL_ACTION_DEFAULT);
 		}
 		goto Return;
 	}
@@ -1995,26 +1348,25 @@ textsetselect(Text *t, uint q0, uint q1)
 	if(p0 < t->fr.p0){
 		/* extend selection backwards */
 		frdrawsel(&t->fr, frptofchar(&t->fr, p0), p0, t->fr.p0, 1);
-		tsyhl(t, SYHL_ACTION_SELECTING, p0, t->fr.p0);
+		tsyhl(t, p0, t->fr.p0, SYHL_ACTION_DEFAULT);
 	}else if(p0 > t->fr.p0){
 		/* trim first part of selection */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p0), t->fr.p0, p0, 0);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, t->fr.p0, p0);
+		tsyhl(t, t->fr.p0, p0, SYHL_ACTION_DEFAULT);
 	}
 	if(p1 > t->fr.p1){
 		/* extend selection forwards */
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1), t->fr.p1, p1, 1);
-		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p1, p1);
+		tsyhl(t, t->fr.p1, p1, SYHL_ACTION_DEFAULT);
 	}else if(p1 < t->fr.p1){
 		/* trim last part of selection */
 		frdrawsel(&t->fr, frptofchar(&t->fr, p1), p1, t->fr.p1, 0);
-		tsyhl(t, SYHL_ACTION_CLEAR_SELECTION, p1, t->fr.p1);
+		tsyhl(t, p1, t->fr.p1, SYHL_ACTION_DEFAULT);
 	}
 
     Return:
 	t->fr.p0 = p0;
 	t->fr.p1 = p1;
-	tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
 }
 
 /*
@@ -2026,9 +1378,7 @@ enum {
 	MINMOVE = 4
 };
 
-// KNOWN: when there is selection and mousebtn2 or mousebtn3 is selected such that it overlaps with selection, then restoring the highlighted syhl is not always correct. Will fix if it turns out to occur and annoy during usage. This happens when cancelling btn2 and btn3 or when going through with btn3 execution. Again, the text under it needs to be selected for this to happen.
 uint
-
 xselect(Text *t, Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
 {
 	uint p0, p1, q, tmp;
@@ -2123,14 +1473,8 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 		*q0 = p0+t->org;
 		*q1 = p1+t->org;
 	}
-
-	int once = 1;
-	while(mousectl->m.buttons) {
+	while(mousectl->m.buttons)
 		readmouse(mousectl);
-		if (!once) {
-			tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
-		}
-	}
 	return buts;
 }
 
@@ -2412,9 +1756,8 @@ textsetorigin(Text *t, uint org, int exact)
 		n = t->org - org;
 		r = runemalloc(n);
 		bufread(&t->file->b, org, r, n);
-		// tokenizer(t, r, 0, n);
 		frinsert(&t->fr, r, r+n, 0);
-		tsyhl(t, SYHL_ACTION_DRAW_FRAME, 0, t->fr.nchars);
+		tsyhl(t, 0, n, SYHL_ACTION_DEFAULT);
 		free(r);
 	}else
 		frdelete(&t->fr, 0, t->fr.nchars);
@@ -2424,7 +1767,7 @@ textsetorigin(Text *t, uint org, int exact)
 	textsetselect(t, t->q0, t->q1);
 	if(fixup && t->fr.p1 > t->fr.p0) {
 		frdrawsel(&t->fr, frptofchar(&t->fr, t->fr.p1-1), t->fr.p1-1, t->fr.p1, 1);
-		tsyhl(t, SYHL_ACTION_SELECTING, t->fr.p0, t->fr.p1);
+		tsyhl(t, t->fr.p0, t->fr.p1, SYHL_ACTION_DEFAULT);
 	}
 }
 

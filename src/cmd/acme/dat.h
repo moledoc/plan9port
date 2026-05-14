@@ -55,7 +55,6 @@ typedef	struct	Text Text;
 typedef	struct	Timer Timer;
 typedef	struct	Window Window;
 typedef	struct	Xfid Xfid;
-typedef struct	Token Token;
 
 // NOTE: define additional colors for syntax highlighting
 #define		DGrey 0x808080FF
@@ -186,8 +185,7 @@ enum	/* Text.extension */
 	EXT_COUNT
 };
 
-enum TokenType { /* syntax_highlighting tokens */
-	SYHL_NORMAL,
+enum { /* syntax_highlighting tokens */
 	SYHL_CODETAG,
 	SYHL_KEYWORD,
 	SYHL_NUMBER,
@@ -199,22 +197,9 @@ enum TokenType { /* syntax_highlighting tokens */
 };
 
 enum SYHL_ACTION { /* syhl action */
-	SYHL_ACTION_DRAW_FRAME,
+	SYHL_ACTION_DEFAULT,
 	SYHL_ACTION_TYPING,
-	SYHL_ACTION_SELECTING,
-	SYHL_ACTION_CLEAR_SELECTION,
 	SYHL_ACTION_COUNT
-};
-
-struct Token
-{
-	int p0;
-	int p1;
-	char *s;
-	int s_len;
-	enum TokenType typ;
-	Image *text;
-	struct Token *next;
 };
 
 struct Text
@@ -598,8 +583,6 @@ extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
 extern Image		*syhlcols[SYHL_NCOL];
-extern Image		*cleantick;
-extern Image		*cleantickback;
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;

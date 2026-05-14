@@ -62,6 +62,7 @@ OFILES=\
 	wind.$O\
 	xfid.$O\
 	dat.$O\
+	tsyhl.$O\
 	keywords_c_hash.$O\
 	keywords_go_hash.$O\
 	keywords_python_hash.$O\
