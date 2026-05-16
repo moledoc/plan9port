@@ -68,6 +68,7 @@ OFILES=\
 	keywords_python_hash.$O\
 	keywords_java_hash.$O\
 	keywords_codetags_hash.$O\
+	colorschemes.$O\
 
 HFILES=dat.h\
 	edit.h\

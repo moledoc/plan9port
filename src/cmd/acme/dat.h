@@ -583,7 +583,10 @@ extern char			*acmeshell;
 extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
+
 extern Image		*syhlcols[SYHL_NCOL];
+extern Image		*syhl_light[SYHL_NCOL];
+
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;
