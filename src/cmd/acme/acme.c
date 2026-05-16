@@ -127,6 +127,7 @@ threadmain(int argc, char *argv[])
 
 	fontnames[0] = estrdup(fontnames[0]);
 	fontnames[1] = estrdup(fontnames[1]);
+	initial_font = estrdup(fontnames[0]);
 
 	quotefmtinstall();
 	fmtinstall('t', timefmt);

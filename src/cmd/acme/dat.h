@@ -591,6 +591,7 @@ extern int			messagesize;		/* negotiated in 9P version setup */
 extern int			globalautoindent;
 extern int			dodollarsigns;
 extern char*		mtpt;
+extern char*		initial_font;
 
 enum
 {

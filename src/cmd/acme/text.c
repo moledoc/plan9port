@@ -1,5 +1,6 @@
 #include <u.h>
 #include <libc.h>
+#include <stdio.h>
 #include <draw.h>
 #include <thread.h>
 #include <cursor.h>
@@ -16,6 +17,7 @@
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
+char*	initial_font;
 
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
@@ -669,6 +671,75 @@ textcomplete(Text *t)
 	return rp;
 }
 
+// KNOWN:
+// * incr font above existing font size reverts it to initial size for some reason
+// * decr below existing font size makes it stuck at the lowest, so added a limit to avoid that
+// * only works with fonts that follow format /mnt/font/<fontname>/<size>/font
+Rune *newfont_path(char *orig_path, int sign, int *rune_path_len) {
+	// NOTE: sometimes the orig_path is <path1>,<path2>
+	// we want to work on only 1 path and will prefer the first one.
+	// initially we replace ',' with '\0', but that will modify the original string so could have some unexpected results.
+	// instead we use `len` when we copy the data from orig_path to path.
+	if (orig_path == NULL) return NULL;
+	int len = 0;
+	char *orig_path_cpy = orig_path;
+	while (*orig_path_cpy != '\0') {
+		if (*orig_path_cpy == ',') {
+			break;
+		}
+		len++;
+		orig_path_cpy++;
+	}
+
+	int offset_s = len-1;
+	int offset_e = len-1;
+	int slash_count = 0;
+
+	// NOTE: path format is /mnt/font/<fontname>/<size>/font
+	// find the slash before <size> so we can carve out the size and increment it
+	while (1) {
+		if (*(orig_path+offset_s) == '/') {
+			slash_count++;
+		}
+		if (slash_count >= 2) {
+			break;
+		}
+		offset_s--;
+	}
+	offset_s++;
+	offset_e = offset_s;
+	while ('0' <= *(orig_path+offset_e) && *(orig_path+offset_e) <= '9') {
+		offset_e++;
+	}
+
+	// NOTE: buf accomodates 2-digit numbers, i.e font size [0, 99]
+	int buf_size = 2+1;
+	char *buf = calloc(buf_size, sizeof(char));
+	memcpy(buf, orig_path+offset_s, offset_e - offset_s);
+	long n = strtol(buf, NULL, 10);
+	n = 4 <= n+sign && n+sign < 100 ? n + sign : n;
+	memset(buf, 0, buf_size);
+	snprintf(buf, buf_size, "%ld", n);
+	int buf_len = strlen(buf);
+
+	int path_len = len+1+1; // NOTE: if nr increases from single-digit to double-digit, then for that we add small buffer for path_len
+	char *path = emalloc(path_len*sizeof(char));
+	memset(path, 0, path_len);
+
+	memcpy(path, orig_path, offset_s);
+	memcpy(path+offset_s, buf, buf_len);
+	memcpy(path+offset_s+buf_len, orig_path+offset_e, len-offset_e);
+
+	path_len = strlen(path); // NOTE: path len could change, single-digit <-> double-digit
+	Rune *newfont_name = bytetorune(path, &path_len);
+	if (rune_path_len != NULL) *rune_path_len = path_len;
+
+	if (buf != NULL) free(buf);
+	if (path != NULL) free(path);
+
+    return newfont_name;
+}
+
 void
 texttype(Text *t, Rune r)
 {
@@ -677,6 +748,14 @@ texttype(Text *t, Rune r)
 	int nr;
 	Rune *rp;
 	Text *u;
+
+	Point pt;
+	ulong diff;
+	ulong tq0;
+	int arrow_up_down_out_of_frame = 0;
+
+	Rune *newfont_name = NULL;
+	int newfont_name_len = 0;
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
 		return;
@@ -699,8 +778,26 @@ texttype(Text *t, Rune r)
 	case Kdown:
 		if(t->what == Tag)
 			goto Tagdown;
-		n = t->fr.maxlines/3;
-		goto case_Down;
+
+		// NOTE: arrow down is row down
+		ArrowDown:
+		typecommit(t);
+		pt = frptofchar(&t->fr, t->fr.p0);
+		pt.y += t->fr.font->height;
+		diff = frcharofpt(&t->fr, pt) - t->fr.p0;
+		tq0 = t->q0+diff;
+		if(tq0 >= t->org+t->fr.nchars) { // NOTE: out of frame, move frame one line
+			n = 1;
+			arrow_up_down_out_of_frame = 1;
+			goto case_Down;
+		} else if(tq0 < t->file->b.nc) {
+			textshow(t, tq0, tq0, TRUE);
+		}
+		return;
+
+		// NOTE: arrow down is page down
+		// n = t->fr.maxlines/3;
+		// goto case_Down;
 	case Kscrollonedown:
 		if(t->what == Tag)
 			goto Tagdown;
@@ -713,12 +810,30 @@ texttype(Text *t, Rune r)
 	case_Down:
 		q0 = t->org+frcharofpt(&t->fr, Pt(t->fr.r.min.x, t->fr.r.min.y+n*t->fr.font->height));
 		textsetorigin(t, q0, TRUE);
+		if (arrow_up_down_out_of_frame) goto ArrowDown;
 		return;
 	case Kup:
 		if(t->what == Tag)
 			goto Tagup;
-		n = t->fr.maxlines/3;
-		goto case_Up;
+
+		// NOTE: arrow down is row down
+		ArrowUp:
+		typecommit(t);
+		pt = frptofchar(&t->fr, t->fr.p0);
+		pt.y -= t->fr.font->height;
+		diff = t->fr.p0 - frcharofpt(&t->fr, pt);
+		tq0 = t->q0-diff;
+		if(tq0 < t->org) { // NOTE: out of frame, move frame one line
+			n = 1;
+			arrow_up_down_out_of_frame = 1;
+			goto case_Up;
+		} else if(tq0 > 0) {
+			textshow(t, tq0, tq0, TRUE);
+		}
+		return;
+		// NOTE: moves page up
+		// n = t->fr.maxlines/3;
+		// goto case_Up;
 	case Kscrolloneup:
 		if(t->what == Tag)
 			goto Tagup;
@@ -729,6 +844,7 @@ texttype(Text *t, Rune r)
 	case_Up:
 		q0 = textbacknl(t, t->org, n);
 		textsetorigin(t, q0, TRUE);
+		if (arrow_up_down_out_of_frame) goto ArrowUp;
 		return;
 	case Khome:
 		typecommit(t);
@@ -776,6 +892,30 @@ texttype(Text *t, Rune r)
 	case Kcmd+'Z':	/* %-shift-Z: redo */
 	 	typecommit(t);
 		undo(t, nil, nil, FALSE, 0, nil, 0);
+		return;
+	case Kcmd+'s':	/* %-s: save */
+		put(&t->w->body, nil, nil, XXX, XXX, nil, 0);
+		return;
+	case Kcmd+'0': /* %-=: reset font */
+		newfont_name = newfont_path(initial_font, 0, &newfont_name_len);
+		if (newfont_name != NULL) {
+			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+			if (newfont_name) free(newfont_name);
+		}
+		return;
+	case Kcmd+'=': /* %-=: increase font */
+		newfont_name = newfont_path(t->fr.font->namespec, 1, &newfont_name_len);
+		if (newfont_name != NULL) {
+			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+			if (newfont_name) free(newfont_name);
+		}
+		return;
+	case Kcmd+'-': /* %-=: decrease font */
+		newfont_name = newfont_path(t->fr.font->namespec, -1, &newfont_name_len);
+		if (newfont_name != NULL) {
+			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+			if (newfont_name) free(newfont_name);
+		}
 		return;
 
 	Tagdown:

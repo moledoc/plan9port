@@ -98,7 +98,7 @@ bgmatch(Point p)
     return textcols[BACK];
 }
 
-void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action) {
+void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum SYHL_ACTION action) {
 
 	static char offset_buf[1024] = {0};
 	static char buf[128] = {0};
@@ -264,13 +264,10 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, int extension, enum SYHL_ACTION action
 		// fix boarder
 
 		// NOTE: expensive, but 100% correct
-		// Image *back = bgmatch(p);
+		Image *back = bgmatch(p);
 
 		// NOTE: simplified: fast, but not 100% correct - when selection, then all lines that have highlight will have the boarder fixed, regardless if it's actually in the selection or not
-		// Image *back = action == SYHL_ACTION_SELECTING ? textcols[HIGH] : textcols[BACK]; // NOTE: fast, but not 100% correct (but seems the incorrectness is not very noticable)
-		
-		// NOTE: simplified++: fast, but not 100% correct - syhl items will pop in selection with white boarder
-		Image *back = textcols[BACK]; // NOTE: 
+		// Image *back = action == SYHL_ACTION_SELECTING && p0 != p1 ? textcols[HIGH] : textcols[BACK];
 
 		stringn(screen, addpt(p, Pt(-1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 1, 0)), back, ZP, f->font, buf, buf_len);
@@ -305,7 +302,7 @@ void tsyhl(Text *t, uint p0, uint p1, enum SYHL_ACTION action) {
 			)) {
 				goto Continue;
 			}
-			_bsyhl(&t->fr, pt, b, t->extension, action);
+			_bsyhl(&t->fr, pt, b, p0, p1, t->extension, action);
 		}
 		Continue:
 		pt.x += b->wid;
