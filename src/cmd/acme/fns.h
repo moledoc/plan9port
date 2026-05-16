@@ -109,7 +109,8 @@ Range range(int, int);
 int	ismtpt(char*);
 
 void tsyhl(Text *, uint, uint, enum SYHL_ACTION);
-void init_syhl_light(void);
-void init_syhl_gruvbox_light(void);
-void init_syhl_gruvbox_dark(void);
-void set_colorscheme(Image *[SYHL_NCOL]);
+
+void init_colorscheme_light(void);
+void init_colorscheme_gruvbox_light(void);
+void init_colorscheme_gruvbox_dark(void);
+void set_colorscheme(ColorScheme);

@@ -203,6 +203,17 @@ enum SYHL_ACTION { /* syhl action */
 	SYHL_ACTION_COUNT
 };
 
+typedef struct ColorScheme
+{
+	Image *tagcols[NCOL];
+	Image *textcols[NCOL];
+	Image *syhlcols[SYHL_NCOL];
+} ColorScheme;
+
+extern ColorScheme colorscheme_light;
+extern ColorScheme colorscheme_gruvbox_light;
+extern ColorScheme colorscheme_gruvbox_dark;
+
 struct Text
 {
 	File		*file;
@@ -583,12 +594,7 @@ extern char			*acmeshell;
 extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
-
 extern Image		*syhlcols[SYHL_NCOL];
-extern Image		*syhl_light[SYHL_NCOL];
-extern Image		*syhl_gruvbox_light[SYHL_NCOL];
-extern Image		*syhl_gruvbox_dark[SYHL_NCOL];
-
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;
@@ -597,6 +603,7 @@ extern int			globalautoindent;
 extern int			dodollarsigns;
 extern char*		mtpt;
 extern char*		initial_font;
+
 
 enum
 {

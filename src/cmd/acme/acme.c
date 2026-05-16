@@ -1041,15 +1041,15 @@ iconinit(void)
 	Image *tmp;
 
 	if(tagcols[BACK] == nil) {
-		/* Blue */
+		/* NOTE: original
+		// Blue
 		tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
 		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
 		tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
 		tagcols[TEXT] = display->black;
 		tagcols[HTEXT] = display->black;
 
-		/* Yellow */
-		/* NOTE: original
+		// Yellow
 		textcols[BACK] = allocimagemix(display, DPaleyellow, DWhite);
 		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
 		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
@@ -1057,11 +1057,11 @@ iconinit(void)
 		textcols[HTEXT] = display->black;
 		*/
 
-		init_syhl_light();
-		init_syhl_gruvbox_light();
-		init_syhl_gruvbox_dark();
-		// set_colorscheme(syhl_light);
-		set_colorscheme(syhl_gruvbox_dark);
+		init_colorscheme_light();
+		init_colorscheme_gruvbox_light();
+		init_colorscheme_gruvbox_dark();
+		set_colorscheme(colorscheme_light);
+		// set_colorscheme(syhl_gruvbox_dark);
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);

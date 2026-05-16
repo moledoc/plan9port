@@ -14,24 +14,30 @@
 #include "fns.h"
 #include <stdio.h> // REMOVEME:
 
-Image		*syhl_light[SYHL_NCOL];
-Image		*syhl_gruvbox_light[SYHL_NCOL];
-Image		*syhl_gruvbox_dark[SYHL_NCOL];
+ColorScheme colorscheme_light = {0};
+ColorScheme colorscheme_gruvbox_light = {0};
+ColorScheme colorscheme_gruvbox_dark = {0};
 
-void init_syhl_light(void) {
-	textcols[BACK] = allocimagemix(display, DWhite, DWhite);
-	textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
-	textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
-	textcols[TEXT] = display->black;
-	textcols[HTEXT] = display->black;
+void init_colorscheme_light(void) {
+	colorscheme_light.tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
+	colorscheme_light.tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
+	colorscheme_light.tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
+	colorscheme_light.tagcols[TEXT] = display->black;
+	colorscheme_light.tagcols[HTEXT] = display->black;
 
-	syhl_light[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowGold);
-	syhl_light[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlue);
-	syhl_light[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMagenta);
-	syhl_light[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedgreen);
-	syhl_light[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
-	syhl_light[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
-	syhl_light[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
+	colorscheme_light.textcols[BACK] = allocimagemix(display, DWhite, DWhite);
+	colorscheme_light.textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
+	colorscheme_light.textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
+	colorscheme_light.textcols[TEXT] = display->black;
+	colorscheme_light.textcols[HTEXT] = display->black;
+
+	colorscheme_light.syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowGold);
+	colorscheme_light.syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlue);
+	colorscheme_light.syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMagenta);
+	colorscheme_light.syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedgreen);
+	colorscheme_light.syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
+	colorscheme_light.syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
+	colorscheme_light.syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 }
 
 #define GRUVBOX_RED 0xCC241DFF
@@ -48,20 +54,27 @@ void init_syhl_light(void) {
 #define GRUVBOX_LIGHT_FG_SEL 0x282828FF
 #define GRUVBOX_LIGHT_BORD 0x282828FF
 
-void init_syhl_gruvbox_light(void) {
-	textcols[BACK] = allocimagemix(display, GRUVBOX_LIGHT_BG, GRUVBOX_LIGHT_BG);
-	textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BG_SEL);
-	textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BORD);
-	textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_FG);
-	textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_FG_SEL);
+void init_colorscheme_gruvbox_light(void) {
+	colorscheme_gruvbox_light.tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
+	colorscheme_gruvbox_light.tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
+	colorscheme_gruvbox_light.tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
+	colorscheme_gruvbox_light.tagcols[TEXT] = display->black;
+	colorscheme_gruvbox_light.tagcols[HTEXT] = display->black;
 
-	syhl_gruvbox_light[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_YELLOW);
-	syhl_gruvbox_light[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_BLUE);
-	syhl_gruvbox_light[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_PURPLE);
-	syhl_gruvbox_light[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREEN);
-	syhl_gruvbox_light[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
-	syhl_gruvbox_light[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
-	syhl_gruvbox_light[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
+
+	colorscheme_gruvbox_light.textcols[BACK] = allocimagemix(display, GRUVBOX_LIGHT_BG, GRUVBOX_LIGHT_BG);
+	colorscheme_gruvbox_light.textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BG_SEL);
+	colorscheme_gruvbox_light.textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BORD);
+	colorscheme_gruvbox_light.textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_FG);
+	colorscheme_gruvbox_light.textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_FG_SEL);
+
+	colorscheme_gruvbox_light.syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_YELLOW);
+	colorscheme_gruvbox_light.syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_BLUE);
+	colorscheme_gruvbox_light.syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_PURPLE);
+	colorscheme_gruvbox_light.syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREEN);
+	colorscheme_gruvbox_light.syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
+	colorscheme_gruvbox_light.syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
+	colorscheme_gruvbox_light.syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
 }
 
 #define GRUVBOX_DARK_BG 0x282828FF
@@ -70,24 +83,32 @@ void init_syhl_gruvbox_light(void) {
 #define GRUVBOX_DARK_FG_SEL 0xFBF1C7FF
 #define GRUVBOX_DARK_BORD 0xFBF1C7FF
 
-void init_syhl_gruvbox_dark(void) {
-	textcols[BACK] = allocimagemix(display, GRUVBOX_DARK_BG, GRUVBOX_DARK_BG);
-	textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BG_SEL);
-	textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BORD);
-	textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_FG);
-	textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_FG_SEL);
+void init_colorscheme_gruvbox_dark(void) {
+	colorscheme_gruvbox_dark.tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
+	colorscheme_gruvbox_dark.tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
+	colorscheme_gruvbox_dark.tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
+	colorscheme_gruvbox_dark.tagcols[TEXT] = display->black;
+	colorscheme_gruvbox_dark.tagcols[HTEXT] = display->black;
 
-	syhl_gruvbox_dark[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_YELLOW);
-	syhl_gruvbox_dark[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_BLUE);
-	syhl_gruvbox_dark[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_PURPLE);
-	syhl_gruvbox_dark[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREEN);
-	syhl_gruvbox_dark[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
-	syhl_gruvbox_dark[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
-	syhl_gruvbox_dark[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
+	colorscheme_gruvbox_dark.textcols[BACK] = allocimagemix(display, GRUVBOX_DARK_BG, GRUVBOX_DARK_BG);
+	colorscheme_gruvbox_dark.textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BG_SEL);
+	colorscheme_gruvbox_dark.textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BORD);
+	colorscheme_gruvbox_dark.textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_FG);
+	colorscheme_gruvbox_dark.textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_FG_SEL);
+
+	colorscheme_gruvbox_dark.syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_YELLOW);
+	colorscheme_gruvbox_dark.syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_BLUE);
+	colorscheme_gruvbox_dark.syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_PURPLE);
+	colorscheme_gruvbox_dark.syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREEN);
+	colorscheme_gruvbox_dark.syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
+	colorscheme_gruvbox_dark.syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
+	colorscheme_gruvbox_dark.syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
 }
 
-void set_colorscheme(Image *colorscheme[SYHL_NCOL]) {
+void set_colorscheme(ColorScheme cs) {
 	for (int i=0; i<SYHL_NCOL; i++) {
-		syhlcols[i] = colorscheme[i];
+		tagcols[i] = cs.tagcols[i];
+		textcols[i] = cs.textcols[i];
+		syhlcols[i] = cs.syhlcols[i];
 	}
 }
