@@ -586,6 +586,8 @@ extern Image		*textcols[NCOL];
 
 extern Image		*syhlcols[SYHL_NCOL];
 extern Image		*syhl_light[SYHL_NCOL];
+extern Image		*syhl_gruvbox_light[SYHL_NCOL];
+extern Image		*syhl_gruvbox_dark[SYHL_NCOL];
 
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;

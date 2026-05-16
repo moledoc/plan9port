@@ -1058,7 +1058,10 @@ iconinit(void)
 		*/
 
 		init_syhl_light();
-		set_colorscheme(syhl_light);
+		init_syhl_gruvbox_light();
+		init_syhl_gruvbox_dark();
+		// set_colorscheme(syhl_light);
+		set_colorscheme(syhl_gruvbox_dark);
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);
