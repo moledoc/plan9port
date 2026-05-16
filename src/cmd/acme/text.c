@@ -12,7 +12,6 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
-#include <stdio.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -671,6 +670,10 @@ textcomplete(Text *t)
 	return rp;
 }
 
+// KNOWN:
+// * incr font above existing font size reverts it to initial size for some reason
+// * decr below existing font size makes it stuck at the lowest, so added a limit to avoid that
+// * only works with fonts that follow format /mnt/font/<fontname>/<size>/font
 Rune *newfont_path(char *orig_path, int sign, int *rune_path_len) {
 	// NOTE: sometimes the orig_path is <path1>,<path2>
 	// we want to work on only 1 path and will prefer the first one.
@@ -691,7 +694,7 @@ Rune *newfont_path(char *orig_path, int sign, int *rune_path_len) {
 	int offset_e = len-1;
 	int slash_count = 0;
 
-	// NOTE: path format is (afaik) /mnt/font/<fontname>/<size>/font
+	// NOTE: path format is /mnt/font/<fontname>/<size>/font
 	// find the slash before <size> so we can carve out the size and increment it
 	while (1) {
 		if (*(orig_path+offset_s) == '/') {
@@ -708,15 +711,17 @@ Rune *newfont_path(char *orig_path, int sign, int *rune_path_len) {
 		offset_e++;
 	}
 
-	char *buf = calloc(offset_e - offset_s+1, sizeof(char));
+	// NOTE: buf accomodates 2-digit numbers, i.e font size [0, 99]
+	int buf_size = 2+1;
+	char *buf = calloc(buf_size, sizeof(char));
 	memcpy(buf, orig_path+offset_s, offset_e - offset_s);
 	long n = strtol(buf, NULL, 10);
-	n += sign*2;
-	memset(buf, 0, offset_e - offset_s+1);
-	snprintf(buf, offset_e-offset_s+1, "%ld", n);
+	n = 4 <= n+sign && n+sign < 100 ? n + sign : n;
+	memset(buf, 0, buf_size);
+	snprintf(buf, buf_size, "%ld", n);
 	int buf_len = strlen(buf);
 
-	int path_len = len+1;
+	int path_len = len+1+1; // NOTE: if nr increases from single-digit to double-digit, then for that we add small buffer for path_len
 	char *path = emalloc(path_len*sizeof(char));
 	memset(path, 0, path_len);
 
@@ -727,8 +732,6 @@ Rune *newfont_path(char *orig_path, int sign, int *rune_path_len) {
 	path_len = strlen(path); // NOTE: path len could change, single-digit <-> double-digit
 	Rune *newfont_name = bytetorune(path, &path_len);
 	if (rune_path_len != NULL) *rune_path_len = path_len;
-
-	printf("HERE: %s %s %ld\n",orig_path, path, n);
 
 	if (buf != NULL) free(buf);
 	if (path != NULL) free(path);
@@ -894,18 +897,24 @@ texttype(Text *t, Rune r)
 		return;
 	case Kcmd+'0': /* %-=: reset font */
 		newfont_name = newfont_path(initial_font, 0, &newfont_name_len);
-		fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
-		if (newfont_name) free(newfont_name);
+		if (newfont_name != NULL) {
+			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+			if (newfont_name) free(newfont_name);
+		}
 		return;
 	case Kcmd+'=': /* %-=: increase font */
 		newfont_name = newfont_path(t->fr.font->namespec, 1, &newfont_name_len);
-		fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
-		if (newfont_name) free(newfont_name);
+		if (newfont_name != NULL) {
+			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+			if (newfont_name) free(newfont_name);
+		}
 		return;
 	case Kcmd+'-': /* %-=: decrease font */
 		newfont_name = newfont_path(t->fr.font->namespec, -1, &newfont_name_len);
-		fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
-		if (newfont_name) free(newfont_name);
+		if (newfont_name != NULL) {
+			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+			if (newfont_name) free(newfont_name);
+		}
 		return;
 
 	Tagdown:
