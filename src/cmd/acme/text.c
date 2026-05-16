@@ -16,7 +16,7 @@
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
-char*		initial_font;
+char*	initial_font;
 
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
