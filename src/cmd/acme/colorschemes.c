@@ -14,6 +14,7 @@
 #include "fns.h"
 #include <stdio.h> // REMOVEME:
 
+enum COLORSCHEME current_colorscheme = COLORSCHEME_LIGHT;
 ColorScheme colorschemes[COLORSCHEMES_NCOL] = {0};
 
 void init_colorscheme_light(void) {
@@ -119,9 +120,11 @@ void init_colorschemes(void) {
 
 void set_colorscheme(enum COLORSCHEME cse) {
 	ColorScheme cs = colorschemes[cse];
-	for (int i=0; i<SYHL_NCOL; i++) {
+	for (int i=0; i<NCOL; i++) {
 		tagcols[i] = cs.tagcols[i];
 		textcols[i] = cs.textcols[i];
+	}
+	for (int i=0; i<SYHL_NCOL; i++) {
 		syhlcols[i] = cs.syhlcols[i];
 	}
 }

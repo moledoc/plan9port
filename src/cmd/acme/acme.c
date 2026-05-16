@@ -1058,7 +1058,7 @@ iconinit(void)
 		*/
 
 		init_colorschemes();
-		set_colorscheme(COLORSCHEME_LIGHT);
+		set_colorscheme(current_colorscheme);
 		// set_colorscheme(syhl_gruvbox_dark);
 	}
 

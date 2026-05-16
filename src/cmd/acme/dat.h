@@ -218,6 +218,7 @@ enum COLORSCHEME {
 };
 
 extern ColorScheme colorschemes[COLORSCHEMES_NCOL];
+extern enum COLORSCHEME current_colorscheme;
 
 struct Text
 {

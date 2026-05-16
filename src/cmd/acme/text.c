@@ -917,9 +917,21 @@ texttype(Text *t, Rune r)
 			if (newfont_name) free(newfont_name);
 		}
 		return;
-	case Kcmd+'>': /* %->: next colorscheme */
+	// FIXME: overdraws the scrollbar
+	// FIXME: redraw text and tag cols properly
+	case Kcmd+'u': /* %-u: next colorscheme */
+		current_colorscheme = (current_colorscheme+1)%COLORSCHEMES_NCOL;
+		set_colorscheme(current_colorscheme);
+		textredraw(t, t->all, t->fr.font, t->fr.b, Dx(t->all)); // FIXME: 
 		return;
-	case Kcmd+'<': /* %->: prev colorscheme */
+	case Kcmd+'U': /* %-U: prev colorscheme */
+		if (current_colorscheme == 0) {
+			current_colorscheme = COLORSCHEMES_NCOL-1;
+		} else {
+			current_colorscheme--;
+		}
+		set_colorscheme(current_colorscheme);
+		textredraw(t, t->all, t->fr.font, t->fr.b, Dx(t->all)); // FIXME: 
 		return;
 
 	Tagdown:
