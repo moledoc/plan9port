@@ -48,22 +48,28 @@ void init_colorscheme_light(void) {
 #define GRUVBOX_PURPLE 0xB16286FF
 #define GRUVBOX_AQUA 0x689D6AFF
 #define GRUVBOX_GREY 0x7C6F64FF
+#define GRUVBOX_GREY2 0x928374FF
+
+#define GRUVBOX_LIGHT_TAG_BG 0xF9F5DFFF // IMPROVE:
+#define GRUVBOX_LIGHT_TAG_BG_SEL 0xEBDBB2FF
+#define GRUVBOX_LIGHT_TAG_BORD 0x076678FF
+#define GRUVBOX_LIGHT_TAG_FG 0x3C3836FF
+#define GRUVBOX_LIGHT_TAG_FG_SEL 0x282828FF
 
 #define GRUVBOX_LIGHT_BG 0xFBF1C7FF
 #define GRUVBOX_LIGHT_BG_SEL 0xEBDBB2FF
+#define GRUVBOX_LIGHT_BORD 0x282828FF
 #define GRUVBOX_LIGHT_FG 0x3C3836FF
 #define GRUVBOX_LIGHT_FG_SEL 0x282828FF
-#define GRUVBOX_LIGHT_BORD 0x282828FF
 
 void init_colorscheme_gruvbox_light(void) {
 	ColorScheme *colorscheme_gruvbox_light = &colorschemes[COLORSCHEME_GRUVBOX_LIGHT];
 
-	colorscheme_gruvbox_light->tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
-	colorscheme_gruvbox_light->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
-	colorscheme_gruvbox_light->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
-	colorscheme_gruvbox_light->tagcols[TEXT] = display->black;
-	colorscheme_gruvbox_light->tagcols[HTEXT] = display->black;
-
+	colorscheme_gruvbox_light->tagcols[BACK] = allocimagemix(display, GRUVBOX_LIGHT_TAG_BG, GRUVBOX_LIGHT_TAG_BG);
+	colorscheme_gruvbox_light->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_BG_SEL);
+	colorscheme_gruvbox_light->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_BORD);
+	colorscheme_gruvbox_light->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_FG);
+	colorscheme_gruvbox_light->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_FG_SEL);
 
 	colorscheme_gruvbox_light->textcols[BACK] = allocimagemix(display, GRUVBOX_LIGHT_BG, GRUVBOX_LIGHT_BG);
 	colorscheme_gruvbox_light->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BG_SEL);
@@ -80,20 +86,27 @@ void init_colorscheme_gruvbox_light(void) {
 	colorscheme_gruvbox_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
 }
 
+
+#define GRUVBOX_DARK_TAG_BG 0x1D2021 // IMPROVE:
+#define GRUVBOX_DARK_TAG_BG_SEL 0x3C3836FF
+#define GRUVBOX_DARK_TAG_BORD 0x83A58FF
+#define GRUVBOX_DARK_TAG_FG 0xEBDBB2FF
+#define GRUVBOX_DARK_TAG_FG_SEL 0xFBF1C7FF
+
 #define GRUVBOX_DARK_BG 0x282828FF
 #define GRUVBOX_DARK_BG_SEL 0x3C3836FF
+#define GRUVBOX_DARK_BORD 0xFBF1C7FF
 #define GRUVBOX_DARK_FG 0xEBDBB2FF
 #define GRUVBOX_DARK_FG_SEL 0xFBF1C7FF
-#define GRUVBOX_DARK_BORD 0xFBF1C7FF
 
 void init_colorscheme_gruvbox_dark(void) {
 	ColorScheme *colorscheme_gruvbox_dark = &colorschemes[COLORSCHEME_GRUVBOX_DARK];
 
-	colorscheme_gruvbox_dark->tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
-	colorscheme_gruvbox_dark->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
-	colorscheme_gruvbox_dark->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
-	colorscheme_gruvbox_dark->tagcols[TEXT] = display->black;
-	colorscheme_gruvbox_dark->tagcols[HTEXT] = display->black;
+	colorscheme_gruvbox_dark->tagcols[BACK] = allocimagemix(display, GRUVBOX_DARK_TAG_BG, GRUVBOX_DARK_TAG_BG);
+	colorscheme_gruvbox_dark->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_BG_SEL);
+	colorscheme_gruvbox_dark->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_BORD);
+	colorscheme_gruvbox_dark->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_FG);
+	colorscheme_gruvbox_dark->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_FG_SEL);
 
 	colorscheme_gruvbox_dark->textcols[BACK] = allocimagemix(display, GRUVBOX_DARK_BG, GRUVBOX_DARK_BG);
 	colorscheme_gruvbox_dark->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BG_SEL);
