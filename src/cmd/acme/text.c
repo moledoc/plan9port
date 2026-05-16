@@ -12,10 +12,12 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include <stdio.h> // REMOVEME:
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
+char*		initial_font;
 
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
@@ -669,6 +671,71 @@ textcomplete(Text *t)
 	return rp;
 }
 
+Rune *newfont_path(char *orig_path, int sign, int *rune_path_len) {
+	// NOTE: sometimes the orig_path is <path1>,<path2>
+	// we want to work on only 1 path and will prefer the first one.
+	// initially we replace ',' with '\0', but that will modify the original string so could have some unexpected results.
+	// instead we use `len` when we copy the data from orig_path to path.
+	if (orig_path == NULL) return NULL;
+	int len = 0;
+	char *orig_path_cpy = orig_path;
+	while (*orig_path_cpy != '\0') {
+		if (*orig_path_cpy == ',') {
+			break;
+		}
+		len++;
+		orig_path_cpy++;
+	}
+
+	int offset_s = len-1;
+	int offset_e = len-1;
+	int slash_count = 0;
+
+	// NOTE: path format is (afaik) /mnt/font/<fontname>/<size>/font
+	// find the slash before <size> so we can carve out the size and increment it
+	while (1) {
+		if (*(orig_path+offset_s) == '/') {
+			slash_count++;
+		}
+		if (slash_count >= 2) {
+			break;
+		}
+		offset_s--;
+	}
+	offset_s++;
+	offset_e = offset_s;
+	while ('0' <= *(orig_path+offset_e) && *(orig_path+offset_e) <= '9') {
+		offset_e++;
+	}
+
+	char *buf = calloc(offset_e - offset_s+1, sizeof(char));
+	memcpy(buf, orig_path+offset_s, offset_e - offset_s);
+	long n = strtol(buf, NULL, 10);
+	n += sign*2;
+	memset(buf, 0, offset_e - offset_s+1);
+	snprintf(buf, offset_e-offset_s+1, "%ld", n);
+	int buf_len = strlen(buf);
+
+	int path_len = len+1;
+	char *path = emalloc(path_len*sizeof(char));
+	memset(path, 0, path_len);
+
+	memcpy(path, orig_path, offset_s);
+	memcpy(path+offset_s, buf, buf_len);
+	memcpy(path+offset_s+buf_len, orig_path+offset_e, len-offset_e);
+
+	path_len = strlen(path); // NOTE: path len could change, single-digit <-> double-digit
+	Rune *newfont_name = bytetorune(path, &path_len);
+	if (rune_path_len != NULL) *rune_path_len = path_len;
+
+	printf("HERE: %s %s %ld\n",orig_path, path, n);
+
+	if (buf != NULL) free(buf);
+	if (path != NULL) free(path);
+
+    return newfont_name;
+}
+
 void
 texttype(Text *t, Rune r)
 {
@@ -682,6 +749,9 @@ texttype(Text *t, Rune r)
 	ulong diff;
 	ulong tq0;
 	int arrow_up_down_out_of_frame = 0;
+
+	Rune *newfont_name = NULL;
+	int newfont_name_len = 0;
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
 		return;
@@ -749,7 +819,7 @@ texttype(Text *t, Rune r)
 		pt.y -= t->fr.font->height;
 		diff = t->fr.p0 - frcharofpt(&t->fr, pt);
 		tq0 = t->q0-diff;
-		if(tq0 <= t->org) { // NOTE: out of frame, move frame one line
+		if(tq0 < t->org) { // NOTE: out of frame, move frame one line
 			n = 1;
 			arrow_up_down_out_of_frame = 1;
 			goto case_Up;
@@ -821,6 +891,21 @@ texttype(Text *t, Rune r)
 		return;
 	case Kcmd+'s':	/* %-s: save */
 		put(&t->w->body, nil, nil, XXX, XXX, nil, 0);
+		return;
+	case Kcmd+'0': /* %-=: reset font */
+		newfont_name = newfont_path(initial_font, 0, &newfont_name_len);
+		fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+		if (newfont_name) free(newfont_name);
+		return;
+	case Kcmd+'=': /* %-=: increase font */
+		newfont_name = newfont_path(t->fr.font->namespec, 1, &newfont_name_len);
+		fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+		if (newfont_name) free(newfont_name);
+		return;
+	case Kcmd+'-': /* %-=: decrease font */
+		newfont_name = newfont_path(t->fr.font->namespec, -1, &newfont_name_len);
+		fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
+		if (newfont_name) free(newfont_name);
 		return;
 
 	Tagdown:
