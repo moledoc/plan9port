@@ -210,9 +210,14 @@ typedef struct ColorScheme
 	Image *syhlcols[SYHL_NCOL];
 } ColorScheme;
 
-extern ColorScheme colorscheme_light;
-extern ColorScheme colorscheme_gruvbox_light;
-extern ColorScheme colorscheme_gruvbox_dark;
+enum COLORSCHEME {
+	COLORSCHEME_LIGHT,
+	COLORSCHEME_GRUVBOX_LIGHT,
+	COLORSCHEME_GRUVBOX_DARK,
+	COLORSCHEMES_NCOL
+};
+
+extern ColorScheme colorschemes[COLORSCHEMES_NCOL];
 
 struct Text
 {

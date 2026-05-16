@@ -917,6 +917,10 @@ texttype(Text *t, Rune r)
 			if (newfont_name) free(newfont_name);
 		}
 		return;
+	case Kcmd+'>': /* %->: next colorscheme */
+		return;
+	case Kcmd+'<': /* %->: prev colorscheme */
+		return;
 
 	Tagdown:
 		/* expand tag to show all text */

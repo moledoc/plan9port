@@ -1057,10 +1057,8 @@ iconinit(void)
 		textcols[HTEXT] = display->black;
 		*/
 
-		init_colorscheme_light();
-		init_colorscheme_gruvbox_light();
-		init_colorscheme_gruvbox_dark();
-		set_colorscheme(colorscheme_light);
+		init_colorschemes();
+		set_colorscheme(COLORSCHEME_LIGHT);
 		// set_colorscheme(syhl_gruvbox_dark);
 	}
 
