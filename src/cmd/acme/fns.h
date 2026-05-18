@@ -1,3 +1,6 @@
+#ifndef FNS_H
+#define FNS_H
+
 /*
 #pragma	varargck	argpos	warning	2
 #pragma	varargck	argpos	warningew	2
@@ -107,11 +110,4 @@ Range range(int, int);
 #define	runemove(a, b, c)	memmove((a), (b), (c)*sizeof(Rune))
 
 int	ismtpt(char*);
-
-void tsyhl(Text *, uint, uint, enum SYHL_ACTION);
-
-void init_colorschemes(void);
-void set_colorscheme(enum COLORSCHEME);
-void set_buttons();
-void update_frame_colorscheme(Frame *, Frame *);
-void redraw_acme();
+#endif // FNS_H

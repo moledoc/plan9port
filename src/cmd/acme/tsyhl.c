@@ -12,6 +12,7 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
 #include "keywords.h"
 
 Image 	*syhlcols[SYHL_NCOL];

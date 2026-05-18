@@ -12,7 +12,110 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
+#include "colorschemes.h"
 #include <stdio.h> // REMOVEME:
+
+// MAYBE: unload old and load new scheme everytime?
+
+init_colorscheme_funcs_t init_colorscheme_funcs[COLORSCHEMES_NCOL] = {
+	init_colorscheme_light,
+	init_colorscheme_gruvbox_light,
+	init_colorscheme_gruvbox_dark,
+	init_colorscheme_light, // NOTE: just in case, consider like default
+};
+
+/*
+void init_colorschemes(void) {
+	init_colorscheme_light();
+	init_colorscheme_gruvbox_light();
+	init_colorscheme_gruvbox_dark();
+}
+*/
+
+void set_colorscheme(enum COLORSCHEME cse) {
+	current_colorscheme = cse;
+	ColorScheme cs = colorschemes[cse];
+	if (cs.tagcols[BACK] == NULL) { // NOTE: if not loaded into mem yet, do it
+		init_colorscheme_funcs[cse]();
+		cs = colorschemes[cse];
+	}
+	for (int i=0; i<NCOL; i++) {
+		tagcols[i] = cs.tagcols[i];
+		textcols[i] = cs.textcols[i];
+	}
+	for (int i=0; i<SYHL_NCOL; i++) {
+		syhlcols[i] = cs.syhlcols[i];
+	}
+	set_buttons();
+}
+
+void set_buttons() {
+	ColorScheme cs = colorschemes[current_colorscheme];
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	/*
+	if(button){
+		freeimage(button);
+		freeimage(modbutton);
+		freeimage(colbutton);
+	}
+	*/
+	if (modbutton) {
+		freeimage(modbutton);
+	}
+
+	button = cs.button;
+	draw(button, r, tagcols[BACK], nil, r.min);
+	border(button, r, ButtonBorder, tagcols[BORD], ZP);
+
+	r = button->r;
+	modbutton = allocimage(display, r, screen->chan, 0, DNofill);
+	draw(modbutton, r, tagcols[BACK], nil, r.min);
+	border(modbutton, r, ButtonBorder, tagcols[BORD], ZP);
+	r = insetrect(r, ButtonBorder);
+	draw(modbutton, r, cs.modbutton, nil, ZP);
+
+	r = button->r;
+	colbutton = cs.colbutton;
+
+	but2col = cs.but2col;
+	but3col = cs.but3col;
+}
+
+void update_frame_colorscheme(Frame *tag, Frame *body) {
+	ColorScheme cs = colorschemes[current_colorscheme];
+	for (int i=0; i<NCOL; i++) {
+		if (tag) {
+			tag->cols[i] = cs.tagcols[i];
+		}
+		if (body) {
+			body->cols[i] = cs.textcols[i];
+		}
+	}
+}
+
+void redraw_acme() {
+	Column *col;
+	Window *w;
+	for (int i = 0; i<row.ncol; i++) {
+		col = row.col[i];
+		for (int j = 0; j<col->nw; j++) {
+			w = col->w[j];
+			update_frame_colorscheme(&w->tag.fr, &w->body.fr);
+			frinittick(&w->tag.fr);
+			frinittick(&w->body.fr);
+		}
+		update_frame_colorscheme(&col->tag.fr, NULL);
+		frinittick(&col->tag.fr);
+	}
+	update_frame_colorscheme(&row.tag.fr, NULL);
+	frinittick(&row.tag.fr);
+	rowresize(&row, row.r);
+	set_buttons();
+	flushimage(display, 1);
+}
+
+
 
 // TODO: add more colorschemes
 // TODO: implement 'Theme' cmd (like Font, Edit etc) to change colorscheme. eg `Theme gruvbox-dark`
@@ -145,89 +248,4 @@ void init_colorscheme_gruvbox_dark(void) {
 	colorscheme_gruvbox_dark->colbutton = allocimage(display, r, screen->chan, 0, GRUVBOX_PURPLE);
 	colorscheme_gruvbox_dark->but2col = allocimage(display, r, screen->chan, 1, GRUVBOX_RED);
 	colorscheme_gruvbox_dark->but3col = allocimage(display, r, screen->chan, 1, GRUVBOX_GREEN);
-}
-
-
-void init_colorschemes(void) {
-	init_colorscheme_light();
-	init_colorscheme_gruvbox_light();
-	init_colorscheme_gruvbox_dark();
-}
-
-void set_colorscheme(enum COLORSCHEME cse) {
-	current_colorscheme = cse;
-	ColorScheme cs = colorschemes[cse];
-	for (int i=0; i<NCOL; i++) {
-		tagcols[i] = cs.tagcols[i];
-		textcols[i] = cs.textcols[i];
-	}
-	for (int i=0; i<SYHL_NCOL; i++) {
-		syhlcols[i] = cs.syhlcols[i];
-	}
-	set_buttons();
-}
-
-void set_buttons() {
-	ColorScheme cs = colorschemes[current_colorscheme];
-	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
-	/*
-	if(button){
-		freeimage(button);
-		freeimage(modbutton);
-		freeimage(colbutton);
-	}
-	*/
-	if (modbutton) {
-		freeimage(modbutton);
-	}
-
-	button = cs.button;
-	draw(button, r, tagcols[BACK], nil, r.min);
-	border(button, r, ButtonBorder, tagcols[BORD], ZP);
-
-	r = button->r;
-	modbutton = allocimage(display, r, screen->chan, 0, DNofill);
-	draw(modbutton, r, tagcols[BACK], nil, r.min);
-	border(modbutton, r, ButtonBorder, tagcols[BORD], ZP);
-	r = insetrect(r, ButtonBorder);
-	draw(modbutton, r, cs.modbutton, nil, ZP);
-
-	r = button->r;
-	colbutton = cs.colbutton;
-
-	but2col = cs.but2col;
-	but3col = cs.but3col;
-}
-
-void update_frame_colorscheme(Frame *tag, Frame *body) {
-	ColorScheme cs = colorschemes[current_colorscheme];
-	for (int i=0; i<NCOL; i++) {
-		if (tag) {
-			tag->cols[i] = cs.tagcols[i];
-		}
-		if (body) {
-			body->cols[i] = cs.textcols[i];
-		}
-	}
-}
-
-void redraw_acme() {
-	Column *col;
-	Window *w;
-	for (int i = 0; i<row.ncol; i++) {
-		col = row.col[i];
-		for (int j = 0; j<col->nw; j++) {
-			w = col->w[j];
-			update_frame_colorscheme(&w->tag.fr, &w->body.fr);
-			frinittick(&w->tag.fr);
-			frinittick(&w->body.fr);
-		}
-		update_frame_colorscheme(&col->tag.fr, NULL);
-		frinittick(&col->tag.fr);
-	}
-	update_frame_colorscheme(&row.tag.fr, NULL);
-	frinittick(&row.tag.fr);
-	rowresize(&row, row.r);
-	set_buttons();
-	flushimage(display, 1);
 }

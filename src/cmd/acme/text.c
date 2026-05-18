@@ -13,6 +13,8 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
+#include "colorschemes.h"
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];

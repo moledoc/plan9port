@@ -11,6 +11,7 @@
 #include <libsec.h>
 #include "dat.h"
 #include "fns.h"
+#include "colorschemes.h"
 	/* for generating syms in mkfile only: */
 	#include <bio.h>
 	#include "edit.h"
@@ -1090,7 +1091,7 @@ iconinit(void)
 
 
 	// REVIEW: MAYBE: small memleak if tagcols are filled here - might discard these values; same with button
-	init_colorschemes();
+	// init_colorschemes();
 	set_colorscheme(current_colorscheme);
 	set_buttons();
 }

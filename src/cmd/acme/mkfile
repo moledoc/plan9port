@@ -73,6 +73,8 @@ OFILES=\
 HFILES=dat.h\
 	edit.h\
 	fns.h\
+	tsyhl.h\
+	colorschemes.h\
 	keywords.h\
 	keywords_codetags.h\
 	keywords_c.h\
