@@ -136,13 +136,7 @@ threadmain(int argc, char *argv[])
 	fontnames[1] = estrdup(fontnames[1]);
 
 	initial_font = estrdup(fontnames[0]);
-	if (strcmp(theme, "light") == 0) {
-		current_colorscheme = COLORSCHEME_LIGHT;
-	} else if (strcmp(theme, "gruvbox-light") == 0) {
-		current_colorscheme = COLORSCHEME_GRUVBOX_LIGHT;
-	} else if (strcmp(theme, "gruvbox-dark") == 0) {
-		current_colorscheme = COLORSCHEME_GRUVBOX_DARK;
-	}
+	current_colorscheme = cs_mapping(theme);
 
 	quotefmtinstall();
 	fmtinstall('t', timefmt);

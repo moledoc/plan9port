@@ -41,6 +41,8 @@ extern ColorScheme colorschemes[COLORSCHEMES_NCOL];
 extern enum COLORSCHEME current_colorscheme;
 extern init_colorscheme_funcs_t init_colorscheme_funcs[COLORSCHEMES_NCOL];
 
+enum COLORSCHEME cs_mapping(char *);
+
 // void init_colorschemes(void);
 void set_colorscheme(enum COLORSCHEME);
 void set_buttons();

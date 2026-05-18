@@ -22,8 +22,18 @@ init_colorscheme_funcs_t init_colorscheme_funcs[COLORSCHEMES_NCOL] = {
 	init_colorscheme_light,
 	init_colorscheme_gruvbox_light,
 	init_colorscheme_gruvbox_dark,
-	init_colorscheme_light, // NOTE: just in case, consider like default
 };
+
+enum COLORSCHEME cs_mapping(char *theme) {
+	if (strncmp(theme, "light", 5) == 0) {
+		return COLORSCHEME_LIGHT;
+	} else if (strncmp(theme, "gruvbox-light", 13) == 0) {
+		return COLORSCHEME_GRUVBOX_LIGHT;
+	} else if (strncmp(theme, "gruvbox-dark", 12) == 0) {
+		return COLORSCHEME_GRUVBOX_DARK;
+	}
+	return current_colorscheme;
+}
 
 /*
 void init_colorschemes(void) {
@@ -116,7 +126,6 @@ void redraw_acme() {
 }
 
 // TODO: add more colorschemes
-// TODO: implement 'Theme' cmd (like Font, Edit etc) to change colorscheme. eg `Theme gruvbox-dark`
 
 enum COLORSCHEME current_colorscheme = COLORSCHEME_LIGHT;
 ColorScheme colorschemes[COLORSCHEMES_NCOL] = {0};

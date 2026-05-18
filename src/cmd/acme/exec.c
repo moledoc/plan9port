@@ -13,6 +13,7 @@
 #include <9pclient.h>
 #include "dat.h"
 #include "fns.h"
+#include "colorschemes.h"
 
 Buffer	snarfbuf;
 
@@ -95,6 +96,7 @@ static Rune LSort[] = { 'S', 'o', 'r', 't', 0 };
 static Rune LTab[] = { 'T', 'a', 'b', 0 };
 static Rune LUndo[] = { 'U', 'n', 'd', 'o', 0 };
 static Rune LZerox[] = { 'Z', 'e', 'r', 'o', 'x', 0 };
+static Rune LTheme[] = { 'T', 'h', 'e', 'm', 'e', 0 };
 
 Exectab exectab[] = {
 	{ LAbort,		doabort,	FALSE,	XXX,		XXX,		},
@@ -126,6 +128,7 @@ Exectab exectab[] = {
 	{ LTab,		tab,		FALSE,	XXX,		XXX		},
 	{ LUndo,		undo,	FALSE,	TRUE,	XXX		},
 	{ LZerox,		zeroxx,	FALSE,	XXX,		XXX		},
+	{ LTheme,		theme,		FALSE,	XXX,		XXX		},
 	{ nil, 			0,		0,		0,		0		}
 };
 
@@ -1122,6 +1125,13 @@ sendx(Text *et, Text *t, Text *_0, int _1, int _2, Rune *_3, int _4)
 	}
 	t->iq1 = t->q1;
 	textshow(t, t->q1, t->q1, 1);
+}
+
+void theme(Text *_0, Text *_1, Text *_3, int _4, int _5, Rune *arg, int narg) {
+	char *a = runetobyte(arg, narg);
+	set_colorscheme(cs_mapping(a));
+	redraw_acme();
+	if (a) free(a);
 }
 
 void
