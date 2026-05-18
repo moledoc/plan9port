@@ -269,6 +269,7 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum 
 		// NOTE: simplified: fast, but not 100% correct - when selection, then all lines that have highlight will have the boarder fixed, regardless if it's actually in the selection or not
 		// Image *back = action == SYHL_ACTION_SELECTING && p0 != p1 ? textcols[HIGH] : textcols[BACK];
 
+		// MAYBE: use `border` from ../../libdraw/border.c instead (but it seems to do the same thing essentially, but for rect, so might not be exactly suitable)
 		stringn(screen, addpt(p, Pt(-1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 0,-1)), back, ZP, f->font, buf, buf_len);

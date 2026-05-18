@@ -208,6 +208,11 @@ typedef struct ColorScheme
 	Image *tagcols[NCOL];
 	Image *textcols[NCOL];
 	Image *syhlcols[SYHL_NCOL];
+	Image *button;
+	Image *modbutton;
+	Image *colbutton;
+	Image *but2col;
+	Image *but3col;
 } ColorScheme;
 
 enum COLORSCHEME {

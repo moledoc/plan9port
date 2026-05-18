@@ -14,6 +14,9 @@
 #include "fns.h"
 #include <stdio.h> // REMOVEME:
 
+// TODO: add more colorschemes
+// TODO: implement 'Theme' cmd (like Font, Edit etc) to change colorscheme. eg `Theme gruvbox-dark`
+
 enum COLORSCHEME current_colorscheme = COLORSCHEME_LIGHT;
 ColorScheme colorschemes[COLORSCHEMES_NCOL] = {0};
 
@@ -39,6 +42,13 @@ void init_colorscheme_light(void) {
 	colorscheme_light->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
 	colorscheme_light->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
 	colorscheme_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
+
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	colorscheme_light->button = allocimage(display, r, screen->chan, 0, DNofill);
+	colorscheme_light->modbutton = allocimage(display, r, screen->chan, 1, DMedblue);
+	colorscheme_light->colbutton = allocimage(display, r, screen->chan, 0, DPurpleblue);
+	colorscheme_light->but2col = allocimage(display, r, screen->chan, 1, 0xAA0000FF);
+	colorscheme_light->but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
 }
 
 #define GRUVBOX_RED 0xCC241DFF
@@ -84,6 +94,13 @@ void init_colorscheme_gruvbox_light(void) {
 	colorscheme_gruvbox_light->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
 	colorscheme_gruvbox_light->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
 	colorscheme_gruvbox_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
+
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	colorscheme_gruvbox_light->button = allocimage(display, r, screen->chan, 0, DNofill);
+	colorscheme_gruvbox_light->modbutton = allocimage(display, r, screen->chan, 1, GRUVBOX_BLUE);
+	colorscheme_gruvbox_light->colbutton = allocimage(display, r, screen->chan, 0, GRUVBOX_PURPLE);
+	colorscheme_gruvbox_light->but2col = allocimage(display, r, screen->chan, 1, GRUVBOX_RED);
+	colorscheme_gruvbox_light->but3col = allocimage(display, r, screen->chan, 1, GRUVBOX_GREEN);
 }
 
 
@@ -121,6 +138,13 @@ void init_colorscheme_gruvbox_dark(void) {
 	colorscheme_gruvbox_dark->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
 	colorscheme_gruvbox_dark->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
 	colorscheme_gruvbox_dark->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
+
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	colorscheme_gruvbox_dark->button = allocimage(display, r, screen->chan, 0, DNofill);
+	colorscheme_gruvbox_dark->modbutton = allocimage(display, r, screen->chan, 1, GRUVBOX_BLUE);
+	colorscheme_gruvbox_dark->colbutton = allocimage(display, r, screen->chan, 0, GRUVBOX_PURPLE);
+	colorscheme_gruvbox_dark->but2col = allocimage(display, r, screen->chan, 1, GRUVBOX_RED);
+	colorscheme_gruvbox_dark->but3col = allocimage(display, r, screen->chan, 1, GRUVBOX_GREEN);
 }
 
 
@@ -128,19 +152,10 @@ void init_colorschemes(void) {
 	init_colorscheme_light();
 	init_colorscheme_gruvbox_light();
 	init_colorscheme_gruvbox_dark();
-
-	ColorScheme cs = colorschemes[current_colorscheme];
-	for (int i=0; i<NCOL; i++) {
-		tagcols[i] = cs.tagcols[i];
-		textcols[i] = cs.textcols[i];
-	}
-	for (int i=0; i<SYHL_NCOL; i++) {
-		syhlcols[i] = cs.syhlcols[i];
-	}
 }
-
 
 void set_colorscheme(enum COLORSCHEME cse) {
+	current_colorscheme = cse;
 	ColorScheme cs = colorschemes[cse];
 	for (int i=0; i<NCOL; i++) {
 		tagcols[i] = cs.tagcols[i];
@@ -149,10 +164,43 @@ void set_colorscheme(enum COLORSCHEME cse) {
 	for (int i=0; i<SYHL_NCOL; i++) {
 		syhlcols[i] = cs.syhlcols[i];
 	}
+	set_buttons();
 }
 
-void set_frame_colorscheme(Frame *tag, Frame *body, enum COLORSCHEME cse) {
-	ColorScheme cs = colorschemes[cse];
+void set_buttons() {
+	ColorScheme cs = colorschemes[current_colorscheme];
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	/*
+	if(button){
+		freeimage(button);
+		freeimage(modbutton);
+		freeimage(colbutton);
+	}
+	*/
+	if (modbutton) {
+		freeimage(modbutton);
+	}
+
+	button = cs.button;
+	draw(button, r, tagcols[BACK], nil, r.min);
+	border(button, r, ButtonBorder, tagcols[BORD], ZP);
+
+	r = button->r;
+	modbutton = allocimage(display, r, screen->chan, 0, DNofill);
+	draw(modbutton, r, tagcols[BACK], nil, r.min);
+	border(modbutton, r, ButtonBorder, tagcols[BORD], ZP);
+	r = insetrect(r, ButtonBorder);
+	draw(modbutton, r, cs.modbutton, nil, ZP);
+
+	r = button->r;
+	colbutton = cs.colbutton;
+
+	but2col = cs.but2col;
+	but3col = cs.but3col;
+}
+
+void update_frame_colorscheme(Frame *tag, Frame *body) {
+	ColorScheme cs = colorschemes[current_colorscheme];
 	for (int i=0; i<NCOL; i++) {
 		if (tag) {
 			tag->cols[i] = cs.tagcols[i];
@@ -163,32 +211,23 @@ void set_frame_colorscheme(Frame *tag, Frame *body, enum COLORSCHEME cse) {
 	}
 }
 
-void set_colorscheme_with_redraw(enum COLORSCHEME cse) {
-	current_colorscheme = cse;
-	ColorScheme cs = colorschemes[cse];
-	for (int i=0; i<NCOL; i++) {
-		tagcols[i] = cs.tagcols[i];
-		textcols[i] = cs.textcols[i];
-	}
-	for (int i=0; i<SYHL_NCOL; i++) {
-		syhlcols[i] = cs.syhlcols[i];
-	}
-
+void redraw_acme() {
 	Column *col;
 	Window *w;
 	for (int i = 0; i<row.ncol; i++) {
 		col = row.col[i];
 		for (int j = 0; j<col->nw; j++) {
 			w = col->w[j];
-			set_frame_colorscheme(&w->tag.fr, &w->body.fr, cse);
+			update_frame_colorscheme(&w->tag.fr, &w->body.fr);
 			frinittick(&w->tag.fr);
 			frinittick(&w->body.fr);
 		}
-		set_frame_colorscheme(&col->tag.fr, NULL, cse);
+		update_frame_colorscheme(&col->tag.fr, NULL);
 		frinittick(&col->tag.fr);
 	}
-	set_frame_colorscheme(&row.tag.fr, NULL, cse);
+	update_frame_colorscheme(&row.tag.fr, NULL);
 	frinittick(&row.tag.fr);
 	rowresize(&row, row.r);
+	set_buttons();
 	flushimage(display, 1);
 }

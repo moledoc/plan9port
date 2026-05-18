@@ -926,17 +926,16 @@ texttype(Text *t, Rune r)
 	// FIXME: overdraws the scrollbar
 	// FIXME: redraw text and tag cols properly
 	case Kcmd+'u': /* %-u: next colorscheme */
-		set_colorscheme_with_redraw((current_colorscheme+1)%COLORSCHEMES_NCOL);
+		set_colorscheme((current_colorscheme+1)%COLORSCHEMES_NCOL);
+		redraw_acme();
 		return;
 	case Kcmd+'U': /* %-U: prev colorscheme */
-		
 		if (current_colorscheme == 0) {
-			set_colorscheme_with_redraw(COLORSCHEMES_NCOL-1);
+			set_colorscheme(COLORSCHEMES_NCOL-1);
 		} else {
-			set_colorscheme_with_redraw(current_colorscheme-1);
+			set_colorscheme(current_colorscheme-1);
 		}
-		// set_colorscheme(current_colorscheme);
-		// textredraw(t, t->all, t->fr.font, t->fr.b, -1); // FIXME: 
+		redraw_acme();
 		return;
 
 	Tagdown:

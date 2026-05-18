@@ -1037,11 +1037,11 @@ Cursor2 boxcursor2 = {
 void
 iconinit(void)
 {
+	/* NOTE: original
 	Rectangle r;
 	Image *tmp;
 
 	if(tagcols[BACK] == nil) {
-		/* NOTE: original
 		// Blue
 		tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
 		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
@@ -1055,11 +1055,7 @@ iconinit(void)
 		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 		textcols[TEXT] = display->black;
 		textcols[HTEXT] = display->black;
-		*/
 
-		init_colorschemes();
-		// set_colorscheme(current_colorscheme);
-		// set_colorscheme(syhl_gruvbox_dark);
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);
@@ -1090,6 +1086,13 @@ iconinit(void)
 
 	but2col = allocimage(display, r, screen->chan, 1, 0xAA0000FF);
 	but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
+	*/
+
+
+	// REVIEW: MAYBE: small memleak if tagcols are filled here - might discard these values; same with button
+	init_colorschemes();
+	set_colorscheme(current_colorscheme);
+	set_buttons();
 }
 
 /*
