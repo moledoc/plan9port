@@ -115,8 +115,6 @@ void redraw_acme() {
 	flushimage(display, 1);
 }
 
-
-
 // TODO: add more colorschemes
 // TODO: implement 'Theme' cmd (like Font, Edit etc) to change colorscheme. eg `Theme gruvbox-dark`
 

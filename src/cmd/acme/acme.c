@@ -66,6 +66,7 @@ threadmain(int argc, char *argv[])
 	Column *c;
 	int ncol;
 	Display *d;
+	char *theme;
 
 	rfork(RFENVG|RFNAMEG);
 
@@ -120,15 +121,28 @@ threadmain(int argc, char *argv[])
 		if(winsize == nil)
 			goto Usage;
 		break;
+	case 't':
+		theme = ARGF();
+		if(theme == nil)
+			goto Usage;
+		break;
 	default:
 	Usage:
-		fprint(2, "usage: acme -a -c ncol -f fontname -F fixedwidthfontname -l loadfile -W winsize\n");
+		fprint(2, "usage: acme -a -c ncol -f fontname -F fixedwidthfontname -l loadfile -W winsize -t theme\n");
 		threadexitsall("usage");
 	}ARGEND
 
 	fontnames[0] = estrdup(fontnames[0]);
 	fontnames[1] = estrdup(fontnames[1]);
+
 	initial_font = estrdup(fontnames[0]);
+	if (strcmp(theme, "light") == 0) {
+		current_colorscheme = COLORSCHEME_LIGHT;
+	} else if (strcmp(theme, "gruvbox-light") == 0) {
+		current_colorscheme = COLORSCHEME_GRUVBOX_LIGHT;
+	} else if (strcmp(theme, "gruvbox-dark") == 0) {
+		current_colorscheme = COLORSCHEME_GRUVBOX_DARK;
+	}
 
 	quotefmtinstall();
 	fmtinstall('t', timefmt);
