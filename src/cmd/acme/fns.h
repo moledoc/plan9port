@@ -112,3 +112,5 @@ void tsyhl(Text *, uint, uint, enum SYHL_ACTION);
 
 void init_colorschemes(void);
 void set_colorscheme(enum COLORSCHEME);
+void set_frame_colorscheme(Frame *, Frame *, enum COLORSCHEME);
+void set_colorscheme_with_redraw(enum COLORSCHEME);

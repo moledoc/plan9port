@@ -128,6 +128,15 @@ void init_colorschemes(void) {
 	init_colorscheme_light();
 	init_colorscheme_gruvbox_light();
 	init_colorscheme_gruvbox_dark();
+
+	ColorScheme cs = colorschemes[current_colorscheme];
+	for (int i=0; i<NCOL; i++) {
+		tagcols[i] = cs.tagcols[i];
+		textcols[i] = cs.textcols[i];
+	}
+	for (int i=0; i<SYHL_NCOL; i++) {
+		syhlcols[i] = cs.syhlcols[i];
+	}
 }
 
 
@@ -140,4 +149,46 @@ void set_colorscheme(enum COLORSCHEME cse) {
 	for (int i=0; i<SYHL_NCOL; i++) {
 		syhlcols[i] = cs.syhlcols[i];
 	}
+}
+
+void set_frame_colorscheme(Frame *tag, Frame *body, enum COLORSCHEME cse) {
+	ColorScheme cs = colorschemes[cse];
+	for (int i=0; i<NCOL; i++) {
+		if (tag) {
+			tag->cols[i] = cs.tagcols[i];
+		}
+		if (body) {
+			body->cols[i] = cs.textcols[i];
+		}
+	}
+}
+
+void set_colorscheme_with_redraw(enum COLORSCHEME cse) {
+	current_colorscheme = cse;
+	ColorScheme cs = colorschemes[cse];
+	for (int i=0; i<NCOL; i++) {
+		tagcols[i] = cs.tagcols[i];
+		textcols[i] = cs.textcols[i];
+	}
+	for (int i=0; i<SYHL_NCOL; i++) {
+		syhlcols[i] = cs.syhlcols[i];
+	}
+
+	Column *col;
+	Window *w;
+	for (int i = 0; i<row.ncol; i++) {
+		col = row.col[i];
+		for (int j = 0; j<col->nw; j++) {
+			w = col->w[j];
+			set_frame_colorscheme(&w->tag.fr, &w->body.fr, cse);
+			frinittick(&w->tag.fr);
+			frinittick(&w->body.fr);
+		}
+		set_frame_colorscheme(&col->tag.fr, NULL, cse);
+		frinittick(&col->tag.fr);
+	}
+	set_frame_colorscheme(&row.tag.fr, NULL, cse);
+	frinittick(&row.tag.fr);
+	rowresize(&row, row.r);
+	flushimage(display, 1);
 }
