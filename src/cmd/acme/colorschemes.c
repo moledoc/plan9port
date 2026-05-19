@@ -22,6 +22,8 @@ init_colorscheme_funcs_t init_colorscheme_funcs[COLORSCHEMES_NCOL] = {
 	init_colorscheme_light,
 	init_colorscheme_gruvbox_light,
 	init_colorscheme_gruvbox_dark,
+	init_colorscheme_solarized_light,
+	init_colorscheme_solarized_dark,
 };
 
 enum COLORSCHEME cs_mapping(char *theme) {
@@ -31,6 +33,10 @@ enum COLORSCHEME cs_mapping(char *theme) {
 		return COLORSCHEME_GRUVBOX_LIGHT;
 	} else if (strncmp(theme, "gruvbox-dark", 12) == 0) {
 		return COLORSCHEME_GRUVBOX_DARK;
+	} else if (strncmp(theme, "solarized-light", 15) == 0) {
+		return COLORSCHEME_SOLARIZED_LIGHT;
+	} else if (strncmp(theme, "solarized-dark", 14) == 0) {
+		return COLORSCHEME_SOLARIZED_DARK;
 	}
 	return current_colorscheme;
 }
@@ -255,4 +261,83 @@ void init_colorscheme_gruvbox_dark(void) {
 	colorscheme_gruvbox_dark->colbutton = allocimage(display, r, screen->chan, 0, GRUVBOX_PURPLE);
 	colorscheme_gruvbox_dark->but2col = allocimage(display, r, screen->chan, 1, GRUVBOX_RED);
 	colorscheme_gruvbox_dark->but3col = allocimage(display, r, screen->chan, 1, GRUVBOX_GREEN);
+}
+
+#define SOLARIZED_BASE03    0x002B36FF
+#define SOLARIZED_BASE02    0x073642FF
+#define SOLARIZED_BASE01    0x586E75FF
+#define SOLARIZED_BASE00    0x657B83FF
+#define SOLARIZED_BASE0     0x839496FF
+#define SOLARIZED_BASE1     0x93A1A1FF
+#define SOLARIZED_BASE2     0xEEE8D5FF
+#define SOLARIZED_BASE3     0xFDF6E3FF
+#define SOLARIZED_YELLOW    0xB58900FF
+#define SOLARIZED_ORANGE    0xCB4B16FF
+#define SOLARIZED_RED       0xDC322FFF
+#define SOLARIZED_MAGENTA   0xD33682FF
+#define SOLARIZED_VIOLET    0x6C71C4FF
+#define SOLARIZED_BLUE      0x268BD2FF
+#define SOLARIZED_CYAN      0x2AA198FF
+#define SOLARIZED_GREEN     0x859900FF
+
+void init_colorscheme_solarized_light(void) {
+	ColorScheme *colorscheme_solarized_light = &colorschemes[COLORSCHEME_SOLARIZED_LIGHT];
+
+	colorscheme_solarized_light->tagcols[BACK] = allocimagemix(display, SOLARIZED_BASE2, SOLARIZED_BASE2);
+	colorscheme_solarized_light->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE3);
+	colorscheme_solarized_light->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
+	colorscheme_solarized_light->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
+	colorscheme_solarized_light->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
+
+	colorscheme_solarized_light->textcols[BACK] = allocimagemix(display, SOLARIZED_BASE3, SOLARIZED_BASE3);
+	colorscheme_solarized_light->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE2);
+	colorscheme_solarized_light->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
+	colorscheme_solarized_light->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
+	colorscheme_solarized_light->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
+
+	colorscheme_solarized_light->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_YELLOW);
+	colorscheme_solarized_light->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BLUE);
+	colorscheme_solarized_light->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_MAGENTA);
+	colorscheme_solarized_light->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_GREEN);
+	colorscheme_solarized_light->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
+	colorscheme_solarized_light->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_RED);
+	colorscheme_solarized_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_CYAN);
+
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	colorscheme_solarized_light->button = allocimage(display, r, screen->chan, 0, DNofill);
+	colorscheme_solarized_light->modbutton = allocimage(display, r, screen->chan, 1, SOLARIZED_BLUE);
+	colorscheme_solarized_light->colbutton = allocimage(display, r, screen->chan, 0, SOLARIZED_VIOLET);
+	colorscheme_solarized_light->but2col = allocimage(display, r, screen->chan, 1, SOLARIZED_RED);
+	colorscheme_solarized_light->but3col = allocimage(display, r, screen->chan, 1, SOLARIZED_GREEN);
+}
+
+void init_colorscheme_solarized_dark(void) {
+	ColorScheme *colorscheme_solarized_dark = &colorschemes[COLORSCHEME_SOLARIZED_DARK];
+
+	colorscheme_solarized_dark->tagcols[BACK] = allocimagemix(display, SOLARIZED_BASE02, SOLARIZED_BASE02);
+	colorscheme_solarized_dark->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE03);
+	colorscheme_solarized_dark->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
+	colorscheme_solarized_dark->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
+	colorscheme_solarized_dark->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
+
+	colorscheme_solarized_dark->textcols[BACK] = allocimagemix(display, SOLARIZED_BASE03, SOLARIZED_BASE03);
+	colorscheme_solarized_dark->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE02);
+	colorscheme_solarized_dark->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
+	colorscheme_solarized_dark->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
+	colorscheme_solarized_dark->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
+
+	colorscheme_solarized_dark->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_YELLOW);
+	colorscheme_solarized_dark->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BLUE);
+	colorscheme_solarized_dark->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_MAGENTA);
+	colorscheme_solarized_dark->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_GREEN);
+	colorscheme_solarized_dark->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
+	colorscheme_solarized_dark->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_RED);
+	colorscheme_solarized_dark->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_CYAN);
+
+	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
+	colorscheme_solarized_dark->button = allocimage(display, r, screen->chan, 0, DNofill);
+	colorscheme_solarized_dark->modbutton = allocimage(display, r, screen->chan, 1, SOLARIZED_BLUE);
+	colorscheme_solarized_dark->colbutton = allocimage(display, r, screen->chan, 0, SOLARIZED_VIOLET);
+	colorscheme_solarized_dark->but2col = allocimage(display, r, screen->chan, 1, SOLARIZED_RED);
+	colorscheme_solarized_dark->but3col = allocimage(display, r, screen->chan, 1, SOLARIZED_GREEN);
 }

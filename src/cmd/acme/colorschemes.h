@@ -32,6 +32,8 @@ enum COLORSCHEME {
 	COLORSCHEME_LIGHT,
 	COLORSCHEME_GRUVBOX_LIGHT,
 	COLORSCHEME_GRUVBOX_DARK,
+	COLORSCHEME_SOLARIZED_LIGHT,
+	COLORSCHEME_SOLARIZED_DARK,
 	COLORSCHEMES_NCOL
 };
 
@@ -52,6 +54,8 @@ void redraw_acme();
 void init_colorscheme_light(void);
 void init_colorscheme_gruvbox_light(void);
 void init_colorscheme_gruvbox_dark(void);
+void init_colorscheme_solarized_light(void);
+void init_colorscheme_solarized_dark(void);
 
 
 #endif // COLORSCHEMES_H
