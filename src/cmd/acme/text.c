@@ -925,8 +925,6 @@ texttype(Text *t, Rune r)
 			if (newfont_name) free(newfont_name);
 		}
 		return;
-	// FIXME: overdraws the scrollbar
-	// FIXME: redraw text and tag cols properly
 	case Kcmd+'u': /* %-u: next colorscheme */
 		set_colorscheme((current_colorscheme+1)%COLORSCHEMES_NCOL);
 		redraw_acme();
