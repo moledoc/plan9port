@@ -14,60 +14,30 @@
 #include "fns.h"
 #include "tsyhl.h"
 #include "colorschemes.h"
-#include <stdio.h> // REMOVEME:
+
+enum COLORSCHEME current_colorscheme = COLORSCHEME_ACME_LIGHT;
+AcmeColors colorschemes[COLORSCHEMES_NCOL] = {0};
 
 // MAYBE: unload old and load new scheme everytime?
-
-init_colorscheme_funcs_t init_colorscheme_funcs[COLORSCHEMES_NCOL] = {
-	init_colorscheme_light,
-	init_colorscheme_gruvbox_light,
-	init_colorscheme_gruvbox_dark,
-	init_colorscheme_solarized_light,
-	init_colorscheme_solarized_dark,
-};
-
-enum COLORSCHEME cs_mapping(char *theme) {
-	if (strncmp(theme, "light", 5) == 0) {
-		return COLORSCHEME_LIGHT;
-	} else if (strncmp(theme, "gruvbox-light", 13) == 0) {
-		return COLORSCHEME_GRUVBOX_LIGHT;
-	} else if (strncmp(theme, "gruvbox-dark", 12) == 0) {
-		return COLORSCHEME_GRUVBOX_DARK;
-	} else if (strncmp(theme, "solarized-light", 15) == 0) {
-		return COLORSCHEME_SOLARIZED_LIGHT;
-	} else if (strncmp(theme, "solarized-dark", 14) == 0) {
-		return COLORSCHEME_SOLARIZED_DARK;
-	}
-	return current_colorscheme;
-}
-
-/*
-void init_colorschemes(void) {
-	init_colorscheme_light();
-	init_colorscheme_gruvbox_light();
-	init_colorscheme_gruvbox_dark();
-}
-*/
-
 void set_colorscheme(enum COLORSCHEME cse) {
 	current_colorscheme = cse;
-	ColorScheme cs = colorschemes[cse];
-	if (cs.tagcols[BACK] == NULL) { // NOTE: if not loaded into mem yet, do it
-		init_colorscheme_funcs[cse]();
-		cs = colorschemes[cse];
+	AcmeColors acs = colorschemes[cse];
+	if (acs.tagcols[BACK] == NULL) { // NOTE: if not loaded into mem yet, do it
+		init_colorscheme(cse, &color_schemes[cse]);
+		acs = colorschemes[cse];
 	}
 	for (int i=0; i<NCOL; i++) {
-		tagcols[i] = cs.tagcols[i];
-		textcols[i] = cs.textcols[i];
+		tagcols[i] = acs.tagcols[i];
+		textcols[i] = acs.textcols[i];
 	}
 	for (int i=0; i<SYHL_NCOL; i++) {
-		syhlcols[i] = cs.syhlcols[i];
+		syhlcols[i] = acs.syhlcols[i];
 	}
 	set_buttons();
 }
 
 void set_buttons() {
-	ColorScheme cs = colorschemes[current_colorscheme];
+	AcmeColors acs = colorschemes[current_colorscheme];
 	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
 	/*
 	if(button){
@@ -80,7 +50,7 @@ void set_buttons() {
 		freeimage(modbutton);
 	}
 
-	button = cs.button;
+	button = acs.button;
 	draw(button, r, tagcols[BACK], nil, r.min);
 	border(button, r, ButtonBorder, tagcols[BORD], ZP);
 
@@ -89,23 +59,23 @@ void set_buttons() {
 	draw(modbutton, r, tagcols[BACK], nil, r.min);
 	border(modbutton, r, ButtonBorder, tagcols[BORD], ZP);
 	r = insetrect(r, ButtonBorder);
-	draw(modbutton, r, cs.modbutton, nil, ZP);
+	draw(modbutton, r, acs.modbutton, nil, ZP);
 
 	r = button->r;
-	colbutton = cs.colbutton;
+	colbutton = acs.colbutton;
 
-	but2col = cs.but2col;
-	but3col = cs.but3col;
+	but2col = acs.but2col;
+	but3col = acs.but3col;
 }
 
 void update_frame_colorscheme(Frame *tag, Frame *body) {
-	ColorScheme cs = colorschemes[current_colorscheme];
+	AcmeColors acs = colorschemes[current_colorscheme];
 	for (int i=0; i<NCOL; i++) {
 		if (tag) {
-			tag->cols[i] = cs.tagcols[i];
+			tag->cols[i] = acs.tagcols[i];
 		}
 		if (body) {
-			body->cols[i] = cs.textcols[i];
+			body->cols[i] = acs.textcols[i];
 		}
 	}
 }
@@ -131,213 +101,496 @@ void redraw_acme() {
 	flushimage(display, 1);
 }
 
-// TODO: add more colorschemes
-
-enum COLORSCHEME current_colorscheme = COLORSCHEME_LIGHT;
-ColorScheme colorschemes[COLORSCHEMES_NCOL] = {0};
-
-void init_colorscheme_light(void) {
-	ColorScheme *colorscheme_light = &colorschemes[COLORSCHEME_LIGHT];
-
-	colorscheme_light->tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
-	colorscheme_light->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
-	colorscheme_light->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
-	colorscheme_light->tagcols[TEXT] = display->black;
-	colorscheme_light->tagcols[HTEXT] = display->black;
-
-	colorscheme_light->textcols[BACK] = allocimagemix(display, DWhite, DWhite);
-	colorscheme_light->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
-	colorscheme_light->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
-	colorscheme_light->textcols[TEXT] = display->black;
-	colorscheme_light->textcols[HTEXT] = display->black;
-
-	colorscheme_light->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowGold);
-	colorscheme_light->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlue);
-	colorscheme_light->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMagenta);
-	colorscheme_light->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedgreen);
-	colorscheme_light->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
-	colorscheme_light->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
-	colorscheme_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
-
-	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
-	colorscheme_light->button = allocimage(display, r, screen->chan, 0, DNofill);
-	colorscheme_light->modbutton = allocimage(display, r, screen->chan, 1, DMedblue);
-	colorscheme_light->colbutton = allocimage(display, r, screen->chan, 0, DPurpleblue);
-	colorscheme_light->but2col = allocimage(display, r, screen->chan, 1, 0xAA0000FF);
-	colorscheme_light->but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
+enum COLORSCHEME cs_mapping(char *theme) {
+	if (strncmp(theme, "acme-light", 10) == 0) {
+		return COLORSCHEME_ACME_LIGHT;
+	} else if (strncmp(theme, "acme-dark", 9) == 0) {
+		return COLORSCHEME_ACME_DARK;
+	} else if (strncmp(theme, "dracula-dark", 13) == 0) {
+		return COLORSCHEME_DRACULA_DARK;
+	} else if (strncmp(theme, "one-dark", 8) == 0) {
+		return COLORSCHEME_ONE_DARK;
+	} else if (strncmp(theme, "tokyo-night-dark", 17) == 0) {
+		return COLORSCHEME_TOKYO_NIGHT_DARK;
+	} else if (strncmp(theme, "tokyo-night-light", 18) == 0) {
+		return COLORSCHEME_TOKYO_NIGHT_LIGHT;
+	} else if (strncmp(theme, "nord-dark", 9) == 0) {
+		return COLORSCHEME_NORD_DARK;
+	} else if (strncmp(theme, "catppuccin-mocha", 16) == 0) {
+		return COLORSCHEME_CATPPUCCIN_MOCHA;
+	} else if (strncmp(theme, "catppuccin-latte", 16) == 0) {
+		return COLORSCHEME_CATPPUCCIN_LATTE;
+	} else if (strncmp(theme, "monokai-dark", 13) == 0) {
+		return COLORSCHEME_MONOKAI_DARK;
+	} else if (strncmp(theme, "material-dark", 13) == 0) {
+		return COLORSCHEME_MATERIAL_DARK;
+	} else if (strncmp(theme, "material-light", 14) == 0) {
+		return COLORSCHEME_MATERIAL_LIGHT;
+	} else if (strncmp(theme, "night-owl-dark", 15) == 0) {
+		return COLORSCHEME_NIGHT_OWL_DARK;
+	} else if (strncmp(theme, "ayu-dark", 8) == 0) {
+		return COLORSCHEME_AYU_DARK;
+	} else if (strncmp(theme, "ayu-light", 9) == 0) {
+		return COLORSCHEME_AYU_LIGHT;
+	} else if (strncmp(theme, "gruvbox-dark", 13) == 0) {
+		return COLORSCHEME_GRUVBOX_DARK;
+	} else if (strncmp(theme, "gruvbox-light", 14) == 0) {
+		return COLORSCHEME_GRUVBOX_LIGHT;
+	} else if (strncmp(theme, "solarized-dark", 15) == 0) {
+		return COLORSCHEME_SOLARIZED_DARK;
+	} else if (strncmp(theme, "solarized-light", 16) == 0) {
+		return COLORSCHEME_SOLARIZED_LIGHT;
+	}
+	return current_colorscheme;
 }
 
-#define GRUVBOX_RED 0xCC241DFF
-#define GRUVBOX_GREEN 0x98971AFF
-#define GRUVBOX_YELLOW 0xD79921FF
-#define GRUVBOX_BLUE 0x458588FF
-#define GRUVBOX_PURPLE 0xB16286FF
-#define GRUVBOX_AQUA 0x689D6AFF
-#define GRUVBOX_GREY 0x7C6F64FF
-#define GRUVBOX_GREY2 0x928374FF
+void init_colorscheme(enum COLORSCHEME cse, ColorScheme *cs) {
+	AcmeColors *acs = &colorschemes[cse];
 
-#define GRUVBOX_LIGHT_TAG_BG 0xD5C4A1FF
-#define GRUVBOX_LIGHT_TAG_BG_SEL 0xEBDBB2FF
-#define GRUVBOX_LIGHT_TAG_BORD 0x076678FF
-#define GRUVBOX_LIGHT_TAG_FG 0x3C3836FF
-#define GRUVBOX_LIGHT_TAG_FG_SEL 0x282828FF
+	acs->tagcols[BACK] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->tag_bg);
+	acs->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->tag_sel);
+	acs->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->tag_bord);
+	acs->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->tag_fg);
+	acs->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->tag_fg);
 
-#define GRUVBOX_LIGHT_BG 0xFBF1C7FF
-#define GRUVBOX_LIGHT_BG_SEL 0xEBDBB2FF
-#define GRUVBOX_LIGHT_BORD 0x282828FF
-#define GRUVBOX_LIGHT_FG 0x3C3836FF
-#define GRUVBOX_LIGHT_FG_SEL 0x282828FF
+	acs->textcols[BACK] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->text_bg);
+	acs->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->text_sel);
+	acs->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->text_bord);
+	acs->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->text_fg);
+	acs->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->text_fg);
 
-void init_colorscheme_gruvbox_light(void) {
-	ColorScheme *colorscheme_gruvbox_light = &colorschemes[COLORSCHEME_GRUVBOX_LIGHT];
-
-	colorscheme_gruvbox_light->tagcols[BACK] = allocimagemix(display, GRUVBOX_LIGHT_TAG_BG, GRUVBOX_LIGHT_TAG_BG);
-	colorscheme_gruvbox_light->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_BG_SEL);
-	colorscheme_gruvbox_light->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_BORD);
-	colorscheme_gruvbox_light->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_FG);
-	colorscheme_gruvbox_light->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_TAG_FG_SEL);
-
-	colorscheme_gruvbox_light->textcols[BACK] = allocimagemix(display, GRUVBOX_LIGHT_BG, GRUVBOX_LIGHT_BG);
-	colorscheme_gruvbox_light->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BG_SEL);
-	colorscheme_gruvbox_light->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_BORD);
-	colorscheme_gruvbox_light->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_FG);
-	colorscheme_gruvbox_light->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_LIGHT_FG_SEL);
-
-	colorscheme_gruvbox_light->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_YELLOW);
-	colorscheme_gruvbox_light->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_BLUE);
-	colorscheme_gruvbox_light->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_PURPLE);
-	colorscheme_gruvbox_light->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREEN);
-	colorscheme_gruvbox_light->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
-	colorscheme_gruvbox_light->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
-	colorscheme_gruvbox_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
+	acs->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->yellow);
+	acs->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->blue);
+	acs->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->magenta);
+	acs->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->green);
+	acs->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->grey);
+	acs->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->red);
+	acs->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, cs->cyan);
 
 	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
-	colorscheme_gruvbox_light->button = allocimage(display, r, screen->chan, 0, DNofill);
-	colorscheme_gruvbox_light->modbutton = allocimage(display, r, screen->chan, 1, GRUVBOX_BLUE);
-	colorscheme_gruvbox_light->colbutton = allocimage(display, r, screen->chan, 0, GRUVBOX_PURPLE);
-	colorscheme_gruvbox_light->but2col = allocimage(display, r, screen->chan, 1, GRUVBOX_RED);
-	colorscheme_gruvbox_light->but3col = allocimage(display, r, screen->chan, 1, GRUVBOX_GREEN);
+	acs->button = allocimage(display, r, screen->chan, 0, DNofill);
+	acs->modbutton = allocimage(display, r, screen->chan, 1, cs->blue);
+	acs->colbutton = allocimage(display, r, screen->chan, 0, cs->purple);
+	acs->but2col = allocimage(display, r, screen->chan, 1, cs->red);
+	acs->but3col = allocimage(display, r, screen->chan, 1, cs->green);
 }
 
+ColorScheme color_schemes[COLORSCHEMES_NCOL] = {
+	// COLORSCHEME_ACME_LIGHT
+	{
+        .tag_bg    = 0xFFFFEAFF,
+        .tag_fg    = 0x000000FF,
+        .tag_sel   = 0xDADADAFF,
+        .tag_bord  = 0x999999FF,
 
-#define GRUVBOX_DARK_TAG_BG 0x504945FF
-#define GRUVBOX_DARK_TAG_BG_SEL 0x3C3836FF
-#define GRUVBOX_DARK_TAG_BORD 0x83A58FF
-#define GRUVBOX_DARK_TAG_FG 0xEBDBB2FF
-#define GRUVBOX_DARK_TAG_FG_SEL 0xFBF1C7FF
+        .text_bg   = 0xFFFFEAFF,
+        .text_fg   = 0x000000FF,
+        .text_sel  = 0xD6E8F8FF,
+        .text_bord = 0xAAAAAAFF,
 
-#define GRUVBOX_DARK_BG 0x282828FF
-#define GRUVBOX_DARK_BG_SEL 0x3C3836FF
-#define GRUVBOX_DARK_BORD 0xFBF1C7FF
-#define GRUVBOX_DARK_FG 0xEBDBB2FF
-#define GRUVBOX_DARK_FG_SEL 0xFBF1C7FF
+        .red       = 0xC24A4AFF,
+        .yellow    = 0xC99A2EFF,
+        .green     = 0x4F7F4FFF,
+        .blue      = 0x4A63B8FF,
+        .purple    = 0x7A56A6FF,
+        .magenta   = 0xA6547CFF,
+        .grey      = 0x777777FF,
+        .cyan      = 0x4F9A9AFF
+    },
 
-void init_colorscheme_gruvbox_dark(void) {
-	ColorScheme *colorscheme_gruvbox_dark = &colorschemes[COLORSCHEME_GRUVBOX_DARK];
+	// COLORSCHEME_ACME_DARK
+    {
+        .tag_bg    = 0x1A1A1AFF,
+        .tag_fg    = 0xCFCFCFFF,
+        .tag_sel   = 0x333333FF,
+        .tag_bord  = 0x555555FF,
 
-	colorscheme_gruvbox_dark->tagcols[BACK] = allocimagemix(display, GRUVBOX_DARK_TAG_BG, GRUVBOX_DARK_TAG_BG);
-	colorscheme_gruvbox_dark->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_BG_SEL);
-	colorscheme_gruvbox_dark->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_BORD);
-	colorscheme_gruvbox_dark->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_FG);
-	colorscheme_gruvbox_dark->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_TAG_FG_SEL);
+        .text_bg   = 0x101010FF,
+        .text_fg   = 0xD0D0D0FF,
+        .text_sel  = 0x2A3B4DFF,
+        .text_bord = 0x444444FF,
 
-	colorscheme_gruvbox_dark->textcols[BACK] = allocimagemix(display, GRUVBOX_DARK_BG, GRUVBOX_DARK_BG);
-	colorscheme_gruvbox_dark->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BG_SEL);
-	colorscheme_gruvbox_dark->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_BORD);
-	colorscheme_gruvbox_dark->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_FG);
-	colorscheme_gruvbox_dark->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_DARK_FG_SEL);
+        .red       = 0xC75A5AFF,
+        .yellow    = 0xC9A24AFF,
+        .green     = 0x5A8A5AFF,
+        .blue      = 0x5A74C9FF,
+        .purple    = 0x8A63C2FF,
+        .magenta   = 0xC2638CFF,
+        .grey      = 0x888888FF,
+        .cyan      = 0x5AA6A6FF
+    },
 
-	colorscheme_gruvbox_dark->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_YELLOW);
-	colorscheme_gruvbox_dark->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_BLUE);
-	colorscheme_gruvbox_dark->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_PURPLE);
-	colorscheme_gruvbox_dark->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREEN);
-	colorscheme_gruvbox_dark->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_GREY);
-	colorscheme_gruvbox_dark->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_RED);
-	colorscheme_gruvbox_dark->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, GRUVBOX_AQUA);
+	// COLORSCHEME_DRACULA_DARK
+	{
+		.tag_bg    = 0x44475AFF,
+		.tag_fg    = 0xBFBFBFFF,
+		.tag_sel   = 0x6272A4FF,
+		.tag_bord  = 0x6272A4FF,
 
-	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
-	colorscheme_gruvbox_dark->button = allocimage(display, r, screen->chan, 0, DNofill);
-	colorscheme_gruvbox_dark->modbutton = allocimage(display, r, screen->chan, 1, GRUVBOX_BLUE);
-	colorscheme_gruvbox_dark->colbutton = allocimage(display, r, screen->chan, 0, GRUVBOX_PURPLE);
-	colorscheme_gruvbox_dark->but2col = allocimage(display, r, screen->chan, 1, GRUVBOX_RED);
-	colorscheme_gruvbox_dark->but3col = allocimage(display, r, screen->chan, 1, GRUVBOX_GREEN);
-}
+		.text_bg   = 0x282A36FF,
+		.text_fg   = 0xF8F8F2FF,
+		.text_sel  = 0x44475AFF,
+		.text_bord = 0x44475AFF,
 
-#define SOLARIZED_BASE03    0x002B36FF
-#define SOLARIZED_BASE02    0x073642FF
-#define SOLARIZED_BASE01    0x586E75FF
-#define SOLARIZED_BASE00    0x657B83FF
-#define SOLARIZED_BASE0     0x839496FF
-#define SOLARIZED_BASE1     0x93A1A1FF
-#define SOLARIZED_BASE2     0xEEE8D5FF
-#define SOLARIZED_BASE3     0xFDF6E3FF
-#define SOLARIZED_YELLOW    0xB58900FF
-#define SOLARIZED_ORANGE    0xCB4B16FF
-#define SOLARIZED_RED       0xDC322FFF
-#define SOLARIZED_MAGENTA   0xD33682FF
-#define SOLARIZED_VIOLET    0x6C71C4FF
-#define SOLARIZED_BLUE      0x268BD2FF
-#define SOLARIZED_CYAN      0x2AA198FF
-#define SOLARIZED_GREEN     0x859900FF
+		.red       = 0xFF5555FF,
+		.yellow    = 0xF1FA8CFF,
+		.green     = 0x50FA7BFF,
+		.blue      = 0x6272A4FF,
+		.purple    = 0xBD93F9FF,
+		.magenta   = 0xFF79C6FF,
+		.grey      = 0x808080FF,
+		.cyan      = 0x8BE9FDFF
+	},
 
-void init_colorscheme_solarized_light(void) {
-	ColorScheme *colorscheme_solarized_light = &colorschemes[COLORSCHEME_SOLARIZED_LIGHT];
+	// COLORSCHEME_ONE_DARK
+	{
+		.tag_bg    = 0x353B45FF,
+		.tag_fg    = 0x828997FF,
+		.tag_sel   = 0x4B5263FF,
+		.tag_bord  = 0x4B5263FF,
 
-	colorscheme_solarized_light->tagcols[BACK] = allocimagemix(display, SOLARIZED_BASE2, SOLARIZED_BASE2);
-	colorscheme_solarized_light->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE3);
-	colorscheme_solarized_light->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
-	colorscheme_solarized_light->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
-	colorscheme_solarized_light->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
+		.text_bg   = 0x282C34FF,
+		.text_fg   = 0xABB2BFFF,
+		.text_sel  = 0x3E4451FF,
+		.text_bord = 0x3E4451FF,
 
-	colorscheme_solarized_light->textcols[BACK] = allocimagemix(display, SOLARIZED_BASE3, SOLARIZED_BASE3);
-	colorscheme_solarized_light->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE2);
-	colorscheme_solarized_light->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
-	colorscheme_solarized_light->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
-	colorscheme_solarized_light->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE00);
+		.red       = 0xE06C75FF,
+		.yellow    = 0xE5C07BFF,
+		.green     = 0x98C379FF,
+		.blue      = 0x61AFEFFF,
+		.purple    = 0xC678DDFF,
+		.magenta   = 0xBE80BFFF,
+		.grey      = 0x5C6370FF,
+		.cyan      = 0x56B6C2FF
+	},
 
-	colorscheme_solarized_light->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_YELLOW);
-	colorscheme_solarized_light->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BLUE);
-	colorscheme_solarized_light->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_MAGENTA);
-	colorscheme_solarized_light->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_GREEN);
-	colorscheme_solarized_light->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
-	colorscheme_solarized_light->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_RED);
-	colorscheme_solarized_light->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_CYAN);
+	// COLORSCHEME_TOKYO_NIGHT_DARK
+	{
+		.tag_bg    = 0x24283BFF,
+		.tag_fg    = 0x9AA5CEFF,
+		.tag_sel   = 0x3B4261FF,
+		.tag_bord  = 0x3B4261FF,
 
-	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
-	colorscheme_solarized_light->button = allocimage(display, r, screen->chan, 0, DNofill);
-	colorscheme_solarized_light->modbutton = allocimage(display, r, screen->chan, 1, SOLARIZED_BLUE);
-	colorscheme_solarized_light->colbutton = allocimage(display, r, screen->chan, 0, SOLARIZED_VIOLET);
-	colorscheme_solarized_light->but2col = allocimage(display, r, screen->chan, 1, SOLARIZED_RED);
-	colorscheme_solarized_light->but3col = allocimage(display, r, screen->chan, 1, SOLARIZED_GREEN);
-}
+		.text_bg   = 0x1A1B26FF,
+		.text_fg   = 0xC0CAF5FF,
+		.text_sel  = 0x33467CFF,
+		.text_bord = 0x33467CFF,
 
-void init_colorscheme_solarized_dark(void) {
-	ColorScheme *colorscheme_solarized_dark = &colorschemes[COLORSCHEME_SOLARIZED_DARK];
+		.red       = 0xF7768EFF,
+		.yellow    = 0xE0AF68FF,
+		.green     = 0x9ECE6AFF,
+		.blue      = 0x7AA2F7FF,
+		.purple    = 0xBB9AF7FF,
+		.magenta   = 0xFF007CFF,
+		.grey      = 0x565F89FF,
+		.cyan      = 0x7DCFFFFF
+	},
 
-	colorscheme_solarized_dark->tagcols[BACK] = allocimagemix(display, SOLARIZED_BASE02, SOLARIZED_BASE02);
-	colorscheme_solarized_dark->tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE03);
-	colorscheme_solarized_dark->tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
-	colorscheme_solarized_dark->tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
-	colorscheme_solarized_dark->tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
+	// COLORSCHEME_TOKYO_NIGHT_LIGHT
+	{
+		.tag_bg    = 0xCBCCD1FF,
+		.tag_fg    = 0x565F89FF,
+		.tag_sel   = 0xA8AECBFF,
+		.tag_bord  = 0xA8AECBFF,
 
-	colorscheme_solarized_dark->textcols[BACK] = allocimagemix(display, SOLARIZED_BASE03, SOLARIZED_BASE03);
-	colorscheme_solarized_dark->textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE02);
-	colorscheme_solarized_dark->textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
-	colorscheme_solarized_dark->textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
-	colorscheme_solarized_dark->textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE0);
+		.text_bg   = 0xD5D6DBFF,
+		.text_fg   = 0x343B58FF,
+		.text_sel  = 0xB4D0E9FF,
+		.text_bord = 0xB4D0E9FF,
 
-	colorscheme_solarized_dark->syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_YELLOW);
-	colorscheme_solarized_dark->syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BLUE);
-	colorscheme_solarized_dark->syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_MAGENTA);
-	colorscheme_solarized_dark->syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_GREEN);
-	colorscheme_solarized_dark->syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_BASE01);
-	colorscheme_solarized_dark->syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_RED);
-	colorscheme_solarized_dark->syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, SOLARIZED_CYAN);
+		.red       = 0x8C4351FF,
+		.yellow    = 0x8F5E15FF,
+		.green     = 0x485E30FF,
+		.blue      = 0x34548AFF,
+		.purple    = 0x5A4A78FF,
+		.magenta   = 0x9854F1FF,
+		.grey      = 0x848CB5FF,
+		.cyan      = 0x166775FF
+	},
 
-	Rectangle r = Rect(0, 0, Scrollwid, font->height+1);
-	colorscheme_solarized_dark->button = allocimage(display, r, screen->chan, 0, DNofill);
-	colorscheme_solarized_dark->modbutton = allocimage(display, r, screen->chan, 1, SOLARIZED_BLUE);
-	colorscheme_solarized_dark->colbutton = allocimage(display, r, screen->chan, 0, SOLARIZED_VIOLET);
-	colorscheme_solarized_dark->but2col = allocimage(display, r, screen->chan, 1, SOLARIZED_RED);
-	colorscheme_solarized_dark->but3col = allocimage(display, r, screen->chan, 1, SOLARIZED_GREEN);
-}
+	// COLORSCHEME_NORD_DARK
+	{
+		.tag_bg    = 0x3B4252FF,
+		.tag_fg    = 0x81A1C1FF,
+		.tag_sel   = 0x4C566AFF,
+		.tag_bord  = 0x4C566AFF,
+
+		.text_bg   = 0x2E3440FF,
+		.text_fg   = 0xD8DEE9FF,
+		.text_sel  = 0x434C5EFF,
+		.text_bord = 0x434C5EFF,
+
+		.red       = 0xBF616AFF,
+		.yellow    = 0xEBCB8BFF,
+		.green     = 0xA3BE8CFF,
+		.blue      = 0x81A1C1FF,
+		.purple    = 0xB48EADFF,
+		.magenta   = 0xD087C0FF,
+		.grey      = 0x616E88FF,
+		.cyan      = 0x88C0D0FF
+	},
+
+	// COLORSCHEME_CATPPUCCIN_MOCHA
+	{
+		.tag_bg    = 0x313244FF,
+		.tag_fg    = 0xA6ADC8FF,
+		.tag_sel   = 0x585B70FF,
+		.tag_bord  = 0x585B70FF,
+
+		.text_bg   = 0x1E1E2EFF,
+		.text_fg   = 0xCDD6F4FF,
+		.text_sel  = 0x45475AFF,
+		.text_bord = 0x45475AFF,
+
+		.red       = 0xF38BA8FF,
+		.yellow    = 0xF9E2AFFF,
+		.green     = 0xA6E3A1FF,
+		.blue      = 0x89B4FAFF,
+		.purple    = 0xCBA6F7FF,
+		.magenta   = 0xF5C2E7FF,
+		.grey      = 0x7F849CFF,
+		.cyan      = 0x94E2D5FF
+	},
+
+	// COLORSCHEME_CATPPUCCIN_LATTE
+	{
+		.tag_bg    = 0xDCE0E8FF,
+		.tag_fg    = 0x6C6F85FF,
+		.tag_sel   = 0xACB0BEFF,
+		.tag_bord  = 0xACB0BEFF,
+
+		.text_bg   = 0xEFF1F5FF,
+		.text_fg   = 0x4C4F69FF,
+		.text_sel  = 0xBCC0CCFF,
+		.text_bord = 0xBCC0CCFF,
+
+		.red       = 0xD20F39FF,
+		.yellow    = 0xDF8E1DFF,
+		.green     = 0x40A02BFF,
+		.blue      = 0x1E66F5FF,
+		.purple    = 0x8839EAFF,
+		.magenta   = 0xEA76CBFF,
+		.grey      = 0x9CA0B0FF,
+		.cyan      = 0x179299FF
+	},
+
+	// COLORSCHEME_MONOKAI_DARK
+	{
+		.tag_bg    = 0x3E3D32FF,
+		.tag_fg    = 0xB3B3ADFF,
+		.tag_sel   = 0x5A594DFF,
+		.tag_bord  = 0x5A594DFF,
+
+		.text_bg   = 0x272822FF,
+		.text_fg   = 0xF8F8F2FF,
+		.text_sel  = 0x49483EFF,
+		.text_bord = 0x49483EFF,
+
+		.red       = 0xF92672FF,
+		.yellow    = 0xE6DB74FF,
+		.green     = 0xA6E22EFF,
+		.blue      = 0x669BEFFF,
+		.purple    = 0xAE81FFFF,
+		.magenta   = 0xFD5FF1FF,
+		.grey      = 0x75715EFF,
+		.cyan      = 0x66D9EFFF
+	},
+
+	// COLORSCHEME_MATERIAL_DARK
+	{
+		.tag_bg    = 0x2B2B2BFF,
+		.tag_fg    = 0xB0BEC5FF,
+		.tag_sel   = 0x4F5B62FF,
+		.tag_bord  = 0x4F5B62FF,
+
+		.text_bg   = 0x212121FF,
+		.text_fg   = 0xEEFFFFFF,
+		.text_sel  = 0x404040FF,
+		.text_bord = 0x404040FF,
+
+		.red       = 0xF07178FF,
+		.yellow    = 0xFFCB6BFF,
+		.green     = 0xC3E88DFF,
+		.blue      = 0x82AAFFFF,
+		.purple    = 0xC792EAFF,
+		.magenta   = 0xFF5370FF,
+		.grey      = 0x546E7AFF,
+		.cyan      = 0x89DDFFFF
+	},
+
+	// COLORSCHEME_MATERIAL_LIGHT
+	{
+		.tag_bg    = 0xE7EAECFF,
+		.tag_fg    = 0x90A4AEFF,
+		.tag_sel   = 0xB0BEC5FF,
+		.tag_bord  = 0xB0BEC5FF,
+
+		.text_bg   = 0xFAFAFAFF,
+		.text_fg   = 0x546E7AFF,
+		.text_sel  = 0xCCD7DAFF,
+		.text_bord = 0xCCD7DAFF,
+
+		.red       = 0xE53935FF,
+		.yellow    = 0xFFB62CFF,
+		.green     = 0x91B859FF,
+		.blue      = 0x6182B8FF,
+		.purple    = 0x7C4DFFFF,
+		.magenta   = 0xC792EAFF,
+		.grey      = 0x90A4AEFF,
+		.cyan      = 0x39ADB5FF
+	},
+
+	// COLORSCHEME_NIGHT_OWL_DARK
+	{
+		.tag_bg    = 0x0B253AFF,
+		.tag_fg    = 0x7F8C98FF,
+		.tag_sel   = 0x2C4A63FF,
+		.tag_bord  = 0x2C4A63FF,
+
+		.text_bg   = 0x011627FF,
+		.text_fg   = 0xD6DEEBFF,
+		.text_sel  = 0x1D3B53FF,
+		.text_bord = 0x1D3B53FF,
+
+		.red       = 0xEF5350FF,
+		.yellow    = 0xECC48DFF,
+		.green     = 0x22DA6EFF,
+		.blue      = 0x82AAFFFF,
+		.purple    = 0xC792EAFF,
+		.magenta   = 0xFF5874FF,
+		.grey      = 0x637777FF,
+		.cyan      = 0x7FDBCAFF
+	},
+
+	// COLORSCHEME_AYU_DARK
+	{
+		.tag_bg    = 0x11151CFF,
+		.tag_fg    = 0x6C7680FF,
+		.tag_sel   = 0x273747FF,
+		.tag_bord  = 0x273747FF,
+
+		.text_bg   = 0x0A0E14FF,
+		.text_fg   = 0xB3B1ADFF,
+		.text_sel  = 0x1B2733FF,
+		.text_bord = 0x1B2733FF,
+
+		.red       = 0xF07178FF,
+		.yellow    = 0xFFB454FF,
+		.green     = 0xB8CC52FF,
+		.blue      = 0x59C2FFFF,
+		.purple    = 0xD2A6FFFF,
+		.magenta   = 0xFF8F40FF,
+		.grey      = 0x6C7680FF,
+		.cyan      = 0x95E6CBFF
+	},
+
+	// COLORSCHEME_AYU_LIGHT
+	{
+		.tag_bg    = 0xF0F0F0FF,
+		.tag_fg    = 0x787B80FF,
+		.tag_sel   = 0xC2C2C2FF,
+		.tag_bord  = 0xC2C2C2FF,
+
+		.text_bg   = 0xFAFAFAFF,
+		.text_fg   = 0x5C6166FF,
+		.text_sel  = 0xD7D8D9FF,
+		.text_bord = 0xD7D8D9FF,
+
+		.red       = 0xF51818FF,
+		.yellow    = 0xF2AE49FF,
+		.green     = 0x86B300FF,
+		.blue      = 0x399EE6FF,
+		.purple    = 0xA37ACCFF,
+		.magenta   = 0xE06C75FF,
+		.grey      = 0x8A9199FF,
+		.cyan      = 0x4CBF99FF
+	},
+
+	// COLORSCHEME_GRUVBOX_DARK
+	{
+		.tag_bg    = 0x3C3836FF,
+		.tag_fg    = 0xA89984FF,
+		.tag_sel   = 0x504945FF,
+		.tag_bord  = 0x665C54FF,
+
+		.text_bg   = 0x282828FF,
+		.text_fg   = 0xEBDBB2FF,
+		.text_sel  = 0x3C3836FF,
+		.text_bord = 0x504945FF,
+
+		.red       = 0xFB4934FF,
+		.yellow    = 0xFABD2FFF,
+		.green     = 0xB8BB26FF,
+		.blue      = 0x83A598FF,
+		.purple    = 0xD3869BFF,
+		.magenta   = 0xD3869BFF,
+		.grey      = 0x928374FF,
+		.cyan      = 0x8EC07CFF
+	},
+
+	// COLORSCHEME_GRUVBOX_LIGHT
+	{
+		.tag_bg    = 0xD5C4A1FF,
+		.tag_fg    = 0x7C6F64FF,
+		.tag_sel   = 0xBDAE93FF,
+		.tag_bord  = 0xA89984FF,
+
+		.text_bg   = 0xFBF1C7FF,
+		.text_fg   = 0x3C3836FF,
+		.text_sel  = 0xE2CCA9FF,
+		.text_bord = 0xD5C4A1FF,
+
+		.red       = 0xCC241DFF,
+		.yellow    = 0xD79921FF,
+		.green     = 0x98971AFF,
+		.blue      = 0x458588FF,
+		.purple    = 0xB16286FF,
+		.magenta   = 0xB16286FF,
+		.grey      = 0x928374FF,
+		.cyan      = 0x689D6AFF
+	},
+
+	// COLORSCHEME_SOLARIZED_DARK
+	{
+		.tag_bg    = 0x073642FF,
+		.tag_fg    = 0x93A1A1FF,
+		.tag_sel   = 0x586E75FF,
+		.tag_bord  = 0x657B83FF,
+
+		.text_bg   = 0x002B36FF,
+		.text_fg   = 0x839496FF,
+		.text_sel  = 0x073642FF,
+		.text_bord = 0x586E75FF,
+
+		.red       = 0xDC322FFF,
+		.yellow    = 0xB58900FF,
+		.green     = 0x859900FF,
+		.blue      = 0x268BD2FF,
+		.purple    = 0x6C71C4FF,
+		.magenta   = 0xD33682FF,
+		.grey      = 0x657B83FF,
+		.cyan      = 0x2AA198FF
+	},
+
+	// COLORSCHEME_SOLARIZED_LIGHT
+	{
+		.tag_bg    = 0xEEE8D5FF,
+		.tag_fg    = 0x657B83FF,
+		.tag_sel   = 0x93A1A1FF,
+		.tag_bord  = 0x93A1A1FF,
+
+		.text_bg   = 0xFDF6E3FF,
+		.text_fg   = 0x586E75FF,
+		.text_sel  = 0xEEE8D5FF,
+		.text_bord = 0x93A1A1FF,
+
+		.red       = 0xDC322FFF,
+		.yellow    = 0xB58900FF,
+		.green     = 0x859900FF,
+		.blue      = 0x268BD2FF,
+		.purple    = 0x6C71C4FF,
+		.magenta   = 0xD33682FF,
+		.grey      = 0x93A1A1FF,
+		.cyan      = 0x2AA198FF
+	}
+};

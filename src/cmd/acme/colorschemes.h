@@ -16,7 +16,32 @@
 #include "fns.h"
 #include "tsyhl.h"
 
+
 typedef struct ColorScheme
+{
+	ulong tag_bg;
+	ulong tag_fg;
+	ulong tag_sel;
+	ulong tag_bord;
+
+	ulong text_bg;
+	ulong text_fg;
+	ulong text_sel;
+	ulong text_bord;
+
+	ulong bord;
+
+	ulong red;
+	ulong yellow;
+	ulong green;
+	ulong blue;
+	ulong purple;
+	ulong magenta;
+	ulong grey;
+	ulong cyan;
+} ColorScheme;
+
+typedef struct AcmeColors
 {
 	Image *tagcols[NCOL];
 	Image *textcols[NCOL];
@@ -26,36 +51,43 @@ typedef struct ColorScheme
 	Image *colbutton;
 	Image *but2col;
 	Image *but3col;
-} ColorScheme;
+} AcmeColors;
 
 enum COLORSCHEME {
-	COLORSCHEME_LIGHT,
-	COLORSCHEME_GRUVBOX_LIGHT,
+	COLORSCHEME_ACME_LIGHT,
+	COLORSCHEME_ACME_DARK,
+	COLORSCHEME_DRACULA_DARK,
+	COLORSCHEME_ONE_DARK,
+	COLORSCHEME_TOKYO_NIGHT_DARK,
+	COLORSCHEME_TOKYO_NIGHT_LIGHT,
+	COLORSCHEME_NORD_DARK,
+	COLORSCHEME_CATPPUCCIN_MOCHA,
+	COLORSCHEME_CATPPUCCIN_LATTE,
+	COLORSCHEME_MONOKAI_DARK,
+	COLORSCHEME_MATERIAL_DARK,
+	COLORSCHEME_MATERIAL_LIGHT,
+	COLORSCHEME_NIGHT_OWL_DARK,
+	COLORSCHEME_AYU_DARK,
+	COLORSCHEME_AYU_LIGHT,
 	COLORSCHEME_GRUVBOX_DARK,
-	COLORSCHEME_SOLARIZED_LIGHT,
+	COLORSCHEME_GRUVBOX_LIGHT,
 	COLORSCHEME_SOLARIZED_DARK,
+	COLORSCHEME_SOLARIZED_LIGHT,
 	COLORSCHEMES_NCOL
 };
 
-typedef void (*init_colorscheme_funcs_t)(void);
-
-extern ColorScheme colorschemes[COLORSCHEMES_NCOL];
+extern AcmeColors colorschemes[COLORSCHEMES_NCOL];
 extern enum COLORSCHEME current_colorscheme;
-extern init_colorscheme_funcs_t init_colorscheme_funcs[COLORSCHEMES_NCOL];
 
 enum COLORSCHEME cs_mapping(char *);
 
-// void init_colorschemes(void);
+void init_colorscheme(enum COLORSCHEME, ColorScheme *);
+
 void set_colorscheme(enum COLORSCHEME);
 void set_buttons();
 void update_frame_colorscheme(Frame *, Frame *);
 void redraw_acme();
 
-void init_colorscheme_light(void);
-void init_colorscheme_gruvbox_light(void);
-void init_colorscheme_gruvbox_dark(void);
-void init_colorscheme_solarized_light(void);
-void init_colorscheme_solarized_dark(void);
-
+extern ColorScheme color_schemes[COLORSCHEMES_NCOL];
 
 #endif // COLORSCHEMES_H
