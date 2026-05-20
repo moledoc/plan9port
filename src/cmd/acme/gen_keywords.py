@@ -10,7 +10,6 @@ def extract_lang(content):
 		raise ValueError("Could not find struct keyword_<lang>")
 	return m.group(1)
 
-
 def extract_keywords(content):
 	parts = content.split("%%")
 	if len(parts) < 3:

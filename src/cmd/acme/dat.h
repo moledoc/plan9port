@@ -1,3 +1,6 @@
+#ifndef DAT_H
+#define DAT_H
+
 enum
 {
 	Qdir,
@@ -175,34 +178,6 @@ enum	/* Text.what */
 	Body
 };
 
-enum	/* Text.extension */
-{
-	EXT_NONE,
-	EXT_C,
-	EXT_GO,
-	EXT_PYTHON,
-	EXT_JAVA,
-	EXT_COUNT
-};
-
-enum { /* syntax_highlighting tokens */
-	SYHL_CODETAG,
-	SYHL_KEYWORD,
-	SYHL_NUMBER,
-	SYHL_QUOTE,
-	SYHL_COMMENT,
-	SYHL_ESCAPE,
-	SYHL_PAREN,
-	SYHL_NCOL
-};
-
-enum SYHL_ACTION { /* syhl action */
-	SYHL_ACTION_DEFAULT,
-	SYHL_ACTION_TYPING,
-	SYHL_ACTION_SELECTING,
-	SYHL_ACTION_COUNT
-};
-
 struct Text
 {
 	File		*file;
@@ -212,7 +187,7 @@ struct Text
 	uint	q0;
 	uint	q1;
 	int	what;
-	int	extension;
+	int	extension; // NOTE: added for tsyhl
 	int	tabstop;
 	Window	*w;
 	Rectangle scrollr;
@@ -583,7 +558,6 @@ extern char			*acmeshell;
 extern char			*fontnames[2];
 extern Image		*tagcols[NCOL];
 extern Image		*textcols[NCOL];
-extern Image		*syhlcols[SYHL_NCOL];
 extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;
@@ -592,6 +566,7 @@ extern int			globalautoindent;
 extern int			dodollarsigns;
 extern char*		mtpt;
 extern char*		initial_font;
+
 
 enum
 {
@@ -616,3 +591,5 @@ extern Channel	*cwarn;		/* chan(void*)[1] (really chan(unit)[1]) */
 extern QLock	editoutlk;
 
 #define	STACK	65536
+
+#endif // DAT_H

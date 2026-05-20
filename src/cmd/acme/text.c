@@ -13,6 +13,8 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
+#include "colorschemes.h"
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
@@ -810,7 +812,10 @@ texttype(Text *t, Rune r)
 	case_Down:
 		q0 = t->org+frcharofpt(&t->fr, Pt(t->fr.r.min.x, t->fr.r.min.y+n*t->fr.font->height));
 		textsetorigin(t, q0, TRUE);
-		if (arrow_up_down_out_of_frame) goto ArrowDown;
+		if (arrow_up_down_out_of_frame) {
+			arrow_up_down_out_of_frame = 0;
+			goto ArrowDown;
+		}
 		return;
 	case Kup:
 		if(t->what == Tag)
@@ -823,7 +828,7 @@ texttype(Text *t, Rune r)
 		pt.y -= t->fr.font->height;
 		diff = t->fr.p0 - frcharofpt(&t->fr, pt);
 		tq0 = t->q0-diff;
-		if(tq0 < t->org) { // NOTE: out of frame, move frame one line
+		if(tq0 <= t->org) { // NOTE: out of frame, move frame one line
 			n = 1;
 			arrow_up_down_out_of_frame = 1;
 			goto case_Up;
@@ -844,7 +849,10 @@ texttype(Text *t, Rune r)
 	case_Up:
 		q0 = textbacknl(t, t->org, n);
 		textsetorigin(t, q0, TRUE);
-		if (arrow_up_down_out_of_frame) goto ArrowUp;
+		if (arrow_up_down_out_of_frame) {
+			 arrow_up_down_out_of_frame = 0;
+			 goto ArrowUp;
+		}
 		return;
 	case Khome:
 		typecommit(t);
@@ -916,6 +924,18 @@ texttype(Text *t, Rune r)
 			fontx(&t->w->body, nil, nil, FALSE, XXX, newfont_name, newfont_name_len);
 			if (newfont_name) free(newfont_name);
 		}
+		return;
+	case Kcmd+'u': /* %-u: next colorscheme */
+		set_colorscheme((current_colorscheme+1)%COLORSCHEMES_NCOL);
+		redraw_acme();
+		return;
+	case Kcmd+'U': /* %-U: prev colorscheme */
+		if (current_colorscheme == 0) {
+			set_colorscheme(COLORSCHEMES_NCOL-1);
+		} else {
+			set_colorscheme(current_colorscheme-1);
+		}
+		redraw_acme();
 		return;
 
 	Tagdown:

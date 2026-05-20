@@ -11,6 +11,7 @@
 #include <libsec.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
 #include <string.h> /* strrchr */
 
 int	winid;

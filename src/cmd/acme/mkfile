@@ -68,10 +68,13 @@ OFILES=\
 	keywords_python_hash.$O\
 	keywords_java_hash.$O\
 	keywords_codetags_hash.$O\
+	colorschemes.$O\
 
 HFILES=dat.h\
 	edit.h\
 	fns.h\
+	tsyhl.h\
+	colorschemes.h\
 	keywords.h\
 	keywords_codetags.h\
 	keywords_c.h\

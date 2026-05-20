@@ -12,6 +12,7 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
 #include "keywords.h"
 
 Image 	*syhlcols[SYHL_NCOL];
@@ -264,11 +265,12 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum 
 		// fix boarder
 
 		// NOTE: expensive, but 100% correct
-		Image *back = bgmatch(p);
+		// Image *back = bgmatch(p);
 
 		// NOTE: simplified: fast, but not 100% correct - when selection, then all lines that have highlight will have the boarder fixed, regardless if it's actually in the selection or not
-		// Image *back = action == SYHL_ACTION_SELECTING && p0 != p1 ? textcols[HIGH] : textcols[BACK];
+		Image *back = action == SYHL_ACTION_SELECTING && p0 != p1 ? textcols[HIGH] : textcols[BACK];
 
+		// MAYBE: use `border` from ../../libdraw/border.c instead (but it seems to do the same thing essentially, but for rect, so might not be exactly suitable)
 		stringn(screen, addpt(p, Pt(-1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 1, 0)), back, ZP, f->font, buf, buf_len);
 		stringn(screen, addpt(p, Pt( 0,-1)), back, ZP, f->font, buf, buf_len);

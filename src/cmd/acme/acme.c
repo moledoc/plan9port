@@ -11,6 +11,7 @@
 #include <libsec.h>
 #include "dat.h"
 #include "fns.h"
+#include "colorschemes.h"
 	/* for generating syms in mkfile only: */
 	#include <bio.h>
 	#include "edit.h"
@@ -65,6 +66,7 @@ threadmain(int argc, char *argv[])
 	Column *c;
 	int ncol;
 	Display *d;
+	char *theme;
 
 	rfork(RFENVG|RFNAMEG);
 
@@ -119,15 +121,22 @@ threadmain(int argc, char *argv[])
 		if(winsize == nil)
 			goto Usage;
 		break;
+	case 't':
+		theme = ARGF();
+		if(theme == nil)
+			goto Usage;
+		break;
 	default:
 	Usage:
-		fprint(2, "usage: acme -a -c ncol -f fontname -F fixedwidthfontname -l loadfile -W winsize\n");
+		fprint(2, "usage: acme -a -c ncol -f fontname -F fixedwidthfontname -l loadfile -W winsize -t theme\n");
 		threadexitsall("usage");
 	}ARGEND
 
 	fontnames[0] = estrdup(fontnames[0]);
 	fontnames[1] = estrdup(fontnames[1]);
+
 	initial_font = estrdup(fontnames[0]);
+	current_colorscheme = cs_mapping(theme);
 
 	quotefmtinstall();
 	fmtinstall('t', timefmt);
@@ -1037,40 +1046,25 @@ Cursor2 boxcursor2 = {
 void
 iconinit(void)
 {
+	/* NOTE: original
 	Rectangle r;
 	Image *tmp;
 
 	if(tagcols[BACK] == nil) {
-		/* Blue */
+		// Blue
 		tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
 		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
 		tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
 		tagcols[TEXT] = display->black;
 		tagcols[HTEXT] = display->black;
 
-		/* Yellow */
-		/* NOTE: original
+		// Yellow
 		textcols[BACK] = allocimagemix(display, DPaleyellow, DWhite);
 		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
 		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 		textcols[TEXT] = display->black;
 		textcols[HTEXT] = display->black;
-		*/
 
-		/* White */
-		textcols[BACK] = allocimagemix(display, DWhite, DWhite);
-		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
-		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
-		textcols[TEXT] = display->black;
-		textcols[HTEXT] = display->black;
-
-		syhlcols[SYHL_CODETAG] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowGold);
-		syhlcols[SYHL_KEYWORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DBlue);
-		syhlcols[SYHL_NUMBER] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMagenta);
-		syhlcols[SYHL_QUOTE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedgreen);
-		syhlcols[SYHL_COMMENT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DGrey);
-		syhlcols[SYHL_ESCAPE] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DRed);
-		syhlcols[SYHL_PAREN] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
 	}
 
 	r = Rect(0, 0, Scrollwid, font->height+1);
@@ -1101,6 +1095,10 @@ iconinit(void)
 
 	but2col = allocimage(display, r, screen->chan, 1, 0xAA0000FF);
 	but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
+	*/
+
+	set_colorscheme(current_colorscheme);
+	set_buttons();
 }
 
 /*

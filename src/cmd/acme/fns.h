@@ -1,3 +1,6 @@
+#ifndef FNS_H
+#define FNS_H
+
 /*
 #pragma	varargck	argpos	warning	2
 #pragma	varargck	argpos	warningew	2
@@ -59,6 +62,7 @@ void	get(Text*, Text*, Text*, int, int, Rune*, int);
 void	put(Text*, Text*, Text*, int, int, Rune*, int);
 void	putfile(File*, int, int, Rune*, int);
 void	fontx(Text*, Text*, Text*, int, int, Rune*, int);
+void	theme(Text*, Text*, Text*, int, int, Rune*, int);
 #undef isalnum
 #define isalnum acmeisalnum
 int	isalnum(Rune);
@@ -107,5 +111,4 @@ Range range(int, int);
 #define	runemove(a, b, c)	memmove((a), (b), (c)*sizeof(Rune))
 
 int	ismtpt(char*);
-
-void tsyhl(Text *, uint, uint, enum SYHL_ACTION);
+#endif // FNS_H
