@@ -1097,9 +1097,6 @@ iconinit(void)
 	but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
 	*/
 
-
-	// REVIEW: MAYBE: small memleak if tagcols are filled here - might discard these values; same with button
-	// init_colorschemes();
 	set_colorscheme(current_colorscheme);
 	set_buttons();
 }
