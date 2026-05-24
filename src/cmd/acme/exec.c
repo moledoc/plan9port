@@ -56,6 +56,7 @@ void	sendx(Text*, Text*, Text*, int, int, Rune*, int);
 void	sort(Text*, Text*, Text*, int, int, Rune*, int);
 void	tab(Text*, Text*, Text*, int, int, Rune*, int);
 void	zeroxx(Text*, Text*, Text*, int, int, Rune*, int);
+void	theme(Text*, Text*, Text*, int, int, Rune*, int);
 
 typedef struct Exectab Exectab;
 struct Exectab
@@ -1127,7 +1128,48 @@ sendx(Text *et, Text *t, Text *_0, int _1, int _2, Rune *_3, int _4)
 	textshow(t, t->q1, t->q1, 1);
 }
 
-void theme(Text *_0, Text *_1, Text *_3, int _4, int _5, Rune *arg, int narg) {
+void theme(Text *_0, Text *_1, Text *_2, int _3, int _4, Rune *arg, int narg) {
+	if (narg == 0) {
+		Window *w;
+		Rune *r;
+		Rune nl[1];
+		Rune name[8];
+
+		w = makenewwindow(nil);
+		runeseprint(name, name + nelem(name), "+Themes");
+		winsetname(w, name, 7);
+
+		nl[0] = '\n';
+
+		for (enum COLORSCHEME i = 0; i < COLORSCHEMES_NCOL; i++) {
+			_str cs_name = colorscheme_names[i];
+
+			r = bytetorune(cs_name.s, (int *)&cs_name.len);
+
+			textinsert(&w->body, w->body.file->b.nc, r, cs_name.len, TRUE);
+			textinsert(&w->body, w->body.file->b.nc, nl, 1, TRUE);
+
+			if (r) free(r);
+		}
+		
+		textsetselect(&w->body, w->body.file->b.nc, w->body.file->b.nc);
+
+		// NOTE: supress file modified warnings and marking the window button as modified
+		w->dirty = FALSE;
+		w->body.file->mod = FALSE;
+
+		winsettag(w);
+		textscrdraw(&w->body);
+		textshow(&w->body, w->body.file->b.nc, w->body.file->b.nc, FALSE);
+		return;
+	}
+
+	USED(_0);
+	USED(_1);
+	USED(_2);
+	USED(_3);
+	USED(_4);
+
 	char *a = runetobyte(arg, narg);
 	set_colorscheme(cs_mapping(a));
 	redraw_acme();

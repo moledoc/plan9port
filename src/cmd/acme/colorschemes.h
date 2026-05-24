@@ -76,6 +76,34 @@ enum COLORSCHEME {
 	COLORSCHEMES_NCOL
 };
 
+typedef struct _str
+{
+	char *s;
+	uint len;
+} _str;
+
+static const _str colorscheme_names[COLORSCHEMES_NCOL] = {
+	{.s="acme-light", .len=10},
+	{.s="acme-dark", .len=9},
+	{.s="dracula-dark", .len=13},
+	{.s="one-dark", .len=8},
+	{.s="tokyo-night-dark", .len=17},
+	{.s="tokyo-night-light", .len=18},
+	{.s="nord-dark", .len=9},
+	{.s="catppuccin-mocha", .len=16},
+	{.s="catppuccin-latte", .len=16},
+	{.s="monokai-dark", .len=13},
+	{.s="material-dark", .len=13},
+	{.s="material-light", .len=14},
+	{.s="night-owl-dark", .len=15},
+	{.s="ayu-dark", .len=8},
+	{.s="ayu-light", .len=9},
+	{.s="gruvbox-dark", .len=13},
+	{.s="gruvbox-light", .len=14},
+	{.s="solarized-dark", .len=15},
+	{.s="solarized-light", .len=16},
+};
+
 extern AcmeColors colorschemes[COLORSCHEMES_NCOL];
 extern enum COLORSCHEME current_colorscheme;
 
