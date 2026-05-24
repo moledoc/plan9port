@@ -486,6 +486,7 @@ enum
 #define Margin scalesize(display, 4)
 #define Border scalesize(display, 2)
 #define ButtonBorder scalesize(display, 2)
+#define Linenrwid scalesize(display, 32) // TODO: what if font increase; how many nr chars does this fit (32 with cur font <= 3)
 
 #define	QID(w,q)	((w<<8)|(q))
 #define	WIN(q)	((((ulong)(q).path)>>8) & 0xFFFFFF)

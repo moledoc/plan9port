@@ -9,8 +9,10 @@
 #include <fcall.h>
 #include <plumb.h>
 #include <libsec.h>
+#include <stdio.h>
 #include "dat.h"
 #include "fns.h"
+#include "tsyhl.h"
 
 static Image *scrtmp;
 
@@ -52,6 +54,54 @@ scrlresize(void)
 		error("scroll alloc");
 }
 
+void linenrdraw(Text *t) {
+	if (t->what != Body) return;
+
+	int nb;
+	Frbox *b;
+	Rectangle r;
+	long line = 1;
+	char linenr_buf[6+1] = {0};
+
+
+	// NOTE: draw linenr bg
+	r = t->scrollr;
+	r.min.x += Scrollwid;
+	r.max.x += Linenrwid;
+	draw(t->fr.b, r, t->fr.cols[BACK], nil, ZP);
+
+	int q0 = 0;
+	while(q0 < t->org && q0 < t->file->b.nc) {
+		if(textreadc(t, q0++) == '\n')
+			line++;
+	}
+
+	r = t->scrollr;
+	Point pt = Pt(r.min.x+Scrollwid, r.min.y);
+
+	snprintf(linenr_buf, 6, "%ld", line);
+	int start_line = line;
+	for(nb=0, b=t->fr.box; nb < t->fr.nbox && line < start_line + t->fr.maxlines; nb++, b++){
+		int q00 = q0;
+		while(q0 < t->file->b.nc && textreadc(t, q0++) != '\n') {};
+
+		memset(linenr_buf, 0, 6);
+		snprintf(linenr_buf, 6, "%ld", line);
+		stringn(screen, pt, syhlcols[SYHL_NUMBER], ZP, t->fr.font, linenr_buf, 3);
+
+		line++;
+		pt.y += t->fr.font->height;
+
+		// if (q0 - q00 - (line-start_line-1) > b->nrune) pt.y += t->fr.font->height; // FIXME: handle visual line rownumber
+	}
+
+	// NOTE: draw linenr border
+	r = t->scrollr;
+	r.min.x += Scrollwid+Linenrwid-1;
+	r.max.x += Linenrwid;
+	draw(t->fr.b, r, t->fr.cols[BORD], nil, ZP);
+}
+
 void
 textscrdraw(Text *t)
 {
@@ -75,6 +125,7 @@ textscrdraw(Text *t)
 		r2.min.x = r2.max.x-1;
 		draw(b, r2, t->fr.cols[BORD], nil, ZP);
 		draw(t->fr.b, r, b, nil, Pt(0, r1.min.y));
+		linenrdraw(t);
 /*flushimage(display, 1); // BUG? */
 	}
 }
