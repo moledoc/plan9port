@@ -102,44 +102,11 @@ void redraw_acme() {
 }
 
 enum COLORSCHEME cs_mapping(char *theme) {
-	if (strncmp(theme, "acme-light", 10) == 0) {
-		return COLORSCHEME_ACME_LIGHT;
-	} else if (strncmp(theme, "acme-dark", 9) == 0) {
-		return COLORSCHEME_ACME_DARK;
-	} else if (strncmp(theme, "dracula-dark", 13) == 0) {
-		return COLORSCHEME_DRACULA_DARK;
-	} else if (strncmp(theme, "one-dark", 8) == 0) {
-		return COLORSCHEME_ONE_DARK;
-	} else if (strncmp(theme, "tokyo-night-dark", 17) == 0) {
-		return COLORSCHEME_TOKYO_NIGHT_DARK;
-	} else if (strncmp(theme, "tokyo-night-light", 18) == 0) {
-		return COLORSCHEME_TOKYO_NIGHT_LIGHT;
-	} else if (strncmp(theme, "nord-dark", 9) == 0) {
-		return COLORSCHEME_NORD_DARK;
-	} else if (strncmp(theme, "catppuccin-mocha", 16) == 0) {
-		return COLORSCHEME_CATPPUCCIN_MOCHA;
-	} else if (strncmp(theme, "catppuccin-latte", 16) == 0) {
-		return COLORSCHEME_CATPPUCCIN_LATTE;
-	} else if (strncmp(theme, "monokai-dark", 13) == 0) {
-		return COLORSCHEME_MONOKAI_DARK;
-	} else if (strncmp(theme, "material-dark", 13) == 0) {
-		return COLORSCHEME_MATERIAL_DARK;
-	} else if (strncmp(theme, "material-light", 14) == 0) {
-		return COLORSCHEME_MATERIAL_LIGHT;
-	} else if (strncmp(theme, "night-owl-dark", 15) == 0) {
-		return COLORSCHEME_NIGHT_OWL_DARK;
-	} else if (strncmp(theme, "ayu-dark", 8) == 0) {
-		return COLORSCHEME_AYU_DARK;
-	} else if (strncmp(theme, "ayu-light", 9) == 0) {
-		return COLORSCHEME_AYU_LIGHT;
-	} else if (strncmp(theme, "gruvbox-dark", 13) == 0) {
-		return COLORSCHEME_GRUVBOX_DARK;
-	} else if (strncmp(theme, "gruvbox-light", 14) == 0) {
-		return COLORSCHEME_GRUVBOX_LIGHT;
-	} else if (strncmp(theme, "solarized-dark", 15) == 0) {
-		return COLORSCHEME_SOLARIZED_DARK;
-	} else if (strncmp(theme, "solarized-light", 16) == 0) {
-		return COLORSCHEME_SOLARIZED_LIGHT;
+	for (enum COLORSCHEME i = 0; i < COLORSCHEMES_NCOL; i++) {
+		_str cs_name = colorscheme_names[i];
+		if (strncmp(theme, cs_name.s, cs_name.len) == 0) {
+			return i;
+		}
 	}
 	return current_colorscheme;
 }
