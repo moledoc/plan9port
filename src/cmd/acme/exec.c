@@ -1154,7 +1154,7 @@ void theme(Text *_0, Text *_1, Text *_2, int _3, int _4, Rune *arg, int narg) {
 		
 		textsetselect(&w->body, w->body.file->b.nc, w->body.file->b.nc);
 
-		// NOTE: supress file modified warnings and marking the window button as modified
+		// NOTE: suppress file modified warnings and marking the window button as modified
 		w->dirty = FALSE;
 		w->body.file->mod = FALSE;
 
@@ -1169,6 +1169,8 @@ void theme(Text *_0, Text *_1, Text *_2, int _3, int _4, Rune *arg, int narg) {
 	USED(_2);
 	USED(_3);
 	USED(_4);
+
+	if (*(arg+narg-1) == '\n') narg -= 1; // NOTE: trim newline char if present
 
 	char *a = runetobyte(arg, narg);
 	set_colorscheme(cs_mapping(a));
