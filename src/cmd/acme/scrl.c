@@ -13,6 +13,7 @@
 #include "dat.h"
 #include "fns.h"
 #include "tsyhl.h"
+#include <time.h>
 
 static Image *scrtmp;
 
@@ -55,10 +56,10 @@ scrlresize(void)
 }
 
 void linenrdraw(Text *t) {
+clock_t begin = clock();
 	if (t->what != Body) return;
 
-	int nb, nc;
-	Frbox *b;
+	textcommit(t, TRUE);
 	Rectangle r;
 	long line = 1;
 	char linenr_buf[6+1] = {0};
@@ -97,6 +98,10 @@ void linenrdraw(Text *t) {
 	r.min.x += Scrollwid+Linenrwid-1;
 	r.max.x += Linenrwid;
 	draw(t->fr.b, r, t->fr.cols[BORD], nil, ZP);
+
+clock_t end = clock();
+double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+	// printf("HERE: linenr full loop time in sec: %f\n", time_spent);
 }
 
 void
