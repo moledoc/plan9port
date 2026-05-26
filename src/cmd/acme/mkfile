@@ -69,12 +69,14 @@ OFILES=\
 	keywords_java_hash.$O\
 	keywords_codetags_hash.$O\
 	colorschemes.$O\
+	linenr.$O\
 
 HFILES=dat.h\
 	edit.h\
 	fns.h\
 	tsyhl.h\
 	colorschemes.h\
+	linenr.h\
 	keywords.h\
 	keywords_codetags.h\
 	keywords_c.h\
