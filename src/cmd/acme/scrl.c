@@ -62,7 +62,7 @@ clock_t begin = clock();
 	textcommit(t, TRUE);
 	Rectangle r;
 	long line = 1;
-	char linenr_buf[6+1] = {0};
+	char linenr_buf[Linenrwid_seed+1] = {0};
 
 	// NOTE: draw linenr bg
 	r = t->scrollr;
@@ -85,9 +85,9 @@ clock_t begin = clock();
 		pt.x = r.min.x;
 
 		if (ptinrect(pt, r)) {
-			memset(linenr_buf, 0, 6);
-			snprintf(linenr_buf, 6, "%ld", line);
-			stringn(screen, pt, syhlcols[SYHL_NUMBER], ZP, t->fr.font, linenr_buf, 3);
+			memset(linenr_buf, 0, Linenrwid_seed+1);
+			snprintf(linenr_buf, Linenrwid_seed+1, "%ld", line);
+			stringn(screen, pt, syhlcols[SYHL_NUMBER], ZP, t->fr.font, linenr_buf, Linenrwid_seed);
 		}
 		line++;
 		while(q0 < t->file->b.nc && textreadc(t, q0++) != '\n') {};

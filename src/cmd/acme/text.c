@@ -52,7 +52,8 @@ textredraw(Text *t, Rectangle r, Font *f, Image *b, int odx)
 	frinit(&t->fr, r, f, b, t->fr.cols);
 	rr = t->fr.r;
 	rr.min.x -= Scrollwid+Scrollgap;	/* back fill to scroll bar */
-	if (t->what == Body) rr.min.x -= Linenrwid;
+	// NOTE: no need to backfill Linenrwid atm
+
 	if(!t->fr.noredraw)
 		draw(t->fr.b, rr, t->fr.cols[BACK], nil, ZP);
 	/* use no wider than 3-space tabs in a directory */
