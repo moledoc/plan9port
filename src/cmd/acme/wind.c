@@ -50,6 +50,13 @@ int file_ext(Rune *rp, int nc) {
 		ext = EXT_JAVA;
 	} else if (strcmp(ext_str, "sql") == 0) {		
 		ext = EXT_SQL;
+	} else if (strcmp(ext_str, "js") == 0 ||
+				strcmp(ext_str, "ts") == 0 ||
+				strcmp(ext_str, "mjs") == 0 ||
+				strcmp(ext_str, "mts") == 0 ||
+				strcmp(ext_str, "jsx") == 0 ||
+				strcmp(ext_str, "tsx") == 0) {		
+		ext = EXT_JS;
 	}
 	return ext;
 }

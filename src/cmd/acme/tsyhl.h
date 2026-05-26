@@ -9,6 +9,7 @@ enum	/* Text.extension */
 	EXT_PYTHON,
 	EXT_JAVA,
 	EXT_SQL,
+	EXT_JS,
 	EXT_COUNT
 };
 

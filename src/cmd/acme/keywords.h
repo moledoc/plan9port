@@ -8,6 +8,7 @@
 #include "keywords_python.h"
 #include "keywords_java.h"
 #include "keywords_sql.h"
+#include "keywords_js.h"
 
 struct keyword {
     const char *name;
@@ -19,5 +20,6 @@ const struct keyword *in_word_set_go(const char *str, size_t len);
 const struct keyword *in_word_set_python(const char *str, size_t len);
 const struct keyword *in_word_set_java(const char *str, size_t len);
 const struct keyword *in_word_set_sql(const char *str, size_t len);
+const struct keyword *in_word_set_js(const char *str, size_t len);
 
 #endif // KEYWORDS_H

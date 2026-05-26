@@ -178,6 +178,14 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum 
 						lev_dist_1((char **)keywords_sql, sizeof(keywords_sql)/sizeof(keywords_sql[0]), buf, &text, &should_draw);
 					}
 					break;					
+				case EXT_JS:
+					if (in_word_set_js(buf, buf_len)) {
+						text = syhlcols[SYHL_KEYWORD];
+						should_draw = 1;
+					} else if (action == SYHL_ACTION_TYPING) {
+						lev_dist_1((char **)keywords_js, sizeof(keywords_js)/sizeof(keywords_js[0]), buf, &text, &should_draw);
+					}
+					break;					
 			}
 
 			// NOTE: we passed end; step back
@@ -235,7 +243,7 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum 
 			buf[0] = *ptr;
 			buf_len = 1;
 			text = syhlcols[SYHL_PAREN];
-		} else if ((*ptr == '/' && (offset+1 < b->nrune && (*(ptr+1) == '/' || *(ptr+1) == '*')) || (offset+1 < b->nrune && *ptr == '*' && *(ptr+1) == '/')) && (extension == EXT_C || extension == EXT_GO || extension == EXT_JAVA)) {
+		} else if ((*ptr == '/' && (offset+1 < b->nrune && (*(ptr+1) == '/' || *(ptr+1) == '*')) || (offset+1 < b->nrune && *ptr == '*' && *(ptr+1) == '/')) && (extension == EXT_C || extension == EXT_GO || extension == EXT_JAVA || extension == EXT_JS)) {
 			offset_s = offset;
 			buf_len = 1;
 			buf[0] = *ptr;
