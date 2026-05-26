@@ -6,7 +6,6 @@
 // NOTE: defaults to 32 if no access to font. With the font I'm currently running, it should be enough (3 digits).
 #define Linenrwid_len 3
 #define Linenrwid scalesize(display, t && t->fr.font ? (Linenrwid_len+(Linenrwid_len%2!=0))*stringwidth(t->fr.font, "0")/2 : 32)
-// #define Linenrwid scalesize(display,  32)
 
 void linenrdraw(Text *);
 
