@@ -36,7 +36,6 @@ void linenrdraw(Text *t) {
 		pt.y += t->fr.font->height;
 	}
 
-
 	// NOTE: draw linenr border
 	r = t->scrollr;
 	r.min.x += Scrollwid+Linenrwid-1;
