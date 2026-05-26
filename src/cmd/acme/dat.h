@@ -486,8 +486,8 @@ enum
 #define Margin scalesize(display, 4)
 #define Border scalesize(display, 2)
 #define ButtonBorder scalesize(display, 2)
-#define Linenrwid_seed 5
-#define Linenrwid scalesize(display, t && t->fr.font ? (Linenrwid_seed+1)*stringwidth(t->fr.font, "0")/2 : 32) // NOTE: fit Linenrwid_seed nr of digit in the number; /2, because stringwidth(,"0") will fit 2 instead of 1; +1 because with this func otherwise fits seed-1. // NOTE: requires access to Text *t.
+#define Linenrwid_len 3
+#define Linenrwid scalesize(display, t && t->fr.font ? (Linenrwid_len+1)*stringwidth(t->fr.font, "0")/2 : 32) // NOTE: fit Linenrwid_seed nr of digit in the number; /2, because stringwidth(,"0") will fit 2 instead of 1; +1 because with this func otherwise fits seed-1. // NOTE: requires access to Text *t.
 
 #define	QID(w,q)	((w<<8)|(q))
 #define	WIN(q)	((((ulong)(q).path)>>8) & 0xFFFFFF)

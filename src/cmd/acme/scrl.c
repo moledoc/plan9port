@@ -61,8 +61,7 @@ clock_t begin = clock();
 
 	textcommit(t, TRUE);
 	Rectangle r;
-	long line = 1;
-	char linenr_buf[Linenrwid_seed+1] = {0};
+	char linenr_buf[Linenrwid_len+1] = {0};
 
 	// NOTE: draw linenr bg
 	r = t->scrollr;
@@ -72,26 +71,13 @@ clock_t begin = clock();
 
 	Point pt = Pt(r.min.x, r.min.y); // NOTE: where numbers are started to be drawn
 
-	int q0 = 0;
-	while(q0 < t->org && q0 < t->file->b.nc) {
-		if(textreadc(t, q0++) == '\n')
-			line++;
+	for (int i=0; i<t->fr.maxlines; i++) {
+		memset(linenr_buf, 0, Linenrwid_len+1);
+		snprintf(linenr_buf, Linenrwid_len+1, "%d", i+1);
+		stringn(screen, pt, syhlcols[SYHL_NUMBER], ZP, t->fr.font, linenr_buf, Linenrwid_len);
+		pt.y += t->fr.font->height;
 	}
-	int start_line = line;
-	
-	for(; line < start_line + t->fr.maxlines && q0-t->org < t->fr.nchars; ){
 
-		pt = frptofchar(&t->fr, q0 - t->org);
-		pt.x = r.min.x;
-
-		if (ptinrect(pt, r)) {
-			memset(linenr_buf, 0, Linenrwid_seed+1);
-			snprintf(linenr_buf, Linenrwid_seed+1, "%ld", line);
-			stringn(screen, pt, syhlcols[SYHL_NUMBER], ZP, t->fr.font, linenr_buf, Linenrwid_seed);
-		}
-		line++;
-		while(q0 < t->file->b.nc && textreadc(t, q0++) != '\n') {};
-	}
 
 	// NOTE: draw linenr border
 	r = t->scrollr;
