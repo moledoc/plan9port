@@ -59,7 +59,6 @@ void linenrdraw(Text *t) {
 clock_t begin = clock();
 	if (t->what != Body) return;
 
-	textcommit(t, TRUE);
 	Rectangle r;
 	char linenr_buf[Linenrwid_len+1] = {0};
 
