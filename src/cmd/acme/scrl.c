@@ -9,10 +9,8 @@
 #include <fcall.h>
 #include <plumb.h>
 #include <libsec.h>
-#include <stdio.h>
 #include "dat.h"
 #include "fns.h"
-#include "tsyhl.h"
 
 static Image *scrtmp;
 

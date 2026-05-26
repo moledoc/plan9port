@@ -110,7 +110,5 @@ Range range(int, int);
 #define	runerealloc(a, b)	(Rune*)erealloc((a), (b)*sizeof(Rune))
 #define	runemove(a, b, c)	memmove((a), (b), (c)*sizeof(Rune))
 
-void linenrdraw(Text *);
-
 int	ismtpt(char*);
 #endif // FNS_H

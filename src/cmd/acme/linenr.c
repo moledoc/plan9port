@@ -14,10 +14,8 @@
 #include "fns.h"
 #include "tsyhl.h"
 #include "linenr.h"
-#include <time.h>
 
 void linenrdraw(Text *t) {
-clock_t begin = clock();
 	if (t->what != Body) return;
 
 	Rectangle r;
@@ -44,8 +42,4 @@ clock_t begin = clock();
 	r.min.x += Scrollwid+Linenrwid-1;
 	r.max.x += Linenrwid;
 	draw(t->fr.b, r, t->fr.cols[BORD], nil, ZP);
-
-clock_t end = clock();
-double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-printf("HERE: linenr full loop time in sec: %f\n", time_spent);
 }
