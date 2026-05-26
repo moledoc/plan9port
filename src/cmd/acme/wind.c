@@ -9,10 +9,11 @@
 #include <fcall.h>
 #include <plumb.h>
 #include <libsec.h>
+#include <string.h> /* strrchr */
 #include "dat.h"
 #include "fns.h"
 #include "tsyhl.h"
-#include <string.h> /* strrchr */
+#include "linenr.h"
 
 int	winid;
 
@@ -277,6 +278,7 @@ winresize(Window *w, Rectangle r, int safe, int keepextra)
 		w->r.max.y = y;
 		textscrdraw(&w->body);
 		w->body.all.min.y = oy;
+		linenrdraw(&w->body);
 	}
 	w->maxlines = min(w->body.fr.nlines, max(w->maxlines, w->body.fr.maxlines));
 	return w->r.max.y;

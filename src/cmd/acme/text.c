@@ -15,6 +15,7 @@
 #include "fns.h"
 #include "tsyhl.h"
 #include "colorschemes.h"
+#include "linenr.h"
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];

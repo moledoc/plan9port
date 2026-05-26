@@ -13,7 +13,6 @@
 #include "dat.h"
 #include "fns.h"
 #include "tsyhl.h"
-#include <time.h>
 
 static Image *scrtmp;
 
@@ -55,40 +54,6 @@ scrlresize(void)
 		error("scroll alloc");
 }
 
-void linenrdraw(Text *t) {
-clock_t begin = clock();
-	if (t->what != Body) return;
-
-	Rectangle r;
-	char linenr_buf[Linenrwid_len+1] = {0};
-
-	// NOTE: draw linenr bg
-	r = t->scrollr;
-	r.min.x += Scrollwid;
-	r.max.x += Linenrwid;
-	draw(t->fr.b, r, t->fr.cols[BACK], nil, ZP);
-
-	Point pt = Pt(r.min.x, r.min.y); // NOTE: where numbers are started to be drawn
-
-	for (int i=0; i<t->fr.maxlines; i++) {
-		memset(linenr_buf, 0, Linenrwid_len+1);
-		snprintf(linenr_buf, Linenrwid_len+1, "%d", i+1);
-		stringn(screen, pt, syhlcols[SYHL_NUMBER], ZP, t->fr.font, linenr_buf, Linenrwid_len);
-		pt.y += t->fr.font->height;
-	}
-
-
-	// NOTE: draw linenr border
-	r = t->scrollr;
-	r.min.x += Scrollwid+Linenrwid-1;
-	r.max.x += Linenrwid;
-	draw(t->fr.b, r, t->fr.cols[BORD], nil, ZP);
-
-clock_t end = clock();
-double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-	// printf("HERE: linenr full loop time in sec: %f\n", time_spent);
-}
-
 void
 textscrdraw(Text *t)
 {
@@ -112,7 +77,6 @@ textscrdraw(Text *t)
 		r2.min.x = r2.max.x-1;
 		draw(b, r2, t->fr.cols[BORD], nil, ZP);
 		draw(t->fr.b, r, b, nil, Pt(0, r1.min.y));
-		linenrdraw(t);
 /*flushimage(display, 1); // BUG? */
 	}
 }
