@@ -133,6 +133,7 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum 
 			if (in_word_set_codetags(buf, buf_len)) {
 				text = syhlcols[SYHL_CODETAG];
 				should_draw = 1;
+				goto AfterSwitch;
 			} else if (action == SYHL_ACTION_TYPING) {
 				lev_dist_1((char **)keywords_codetags, sizeof(keywords_codetags)/sizeof(keywords_codetags[0]), buf, &text, &should_draw);
 			}
@@ -188,6 +189,7 @@ void _bsyhl(Frame *f, Point pt, Frbox *b, uint p0, uint p1, int extension, enum 
 					break;					
 			}
 
+			AfterSwitch:
 			// NOTE: we passed end; step back
 			offset--; ptr--;
 
