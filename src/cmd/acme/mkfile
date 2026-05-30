@@ -21,6 +21,12 @@ keywords_python.h: gen_keywords.py keywords_python.gperf
 keywords_java.h: gen_keywords.py keywords_java.gperf
 	./gen_keywords.py keywords_java.gperf
 
+keywords_sql.h: gen_keywords.py keywords_sql.gperf
+	./gen_keywords.py keywords_sql.gperf
+
+keywords_js.h: gen_keywords.py keywords_sql.gperf
+	./gen_keywords.py keywords_js.gperf
+
 # generate c code with gperf:
 # gperf -C -E -t -L C -N in_word_set_<lang> keywords_<lang>.gperf > keywords_<lang>_hash.c
 
@@ -38,6 +44,12 @@ keywords_java_hash.c: keywords_java.gperf
 
 keywords_codetags_hash.c: keywords_codetags.gperf
 	gperf -C -E -t -L C -N in_word_set_codetags keywords_codetags.gperf > keywords_codetags_hash.c
+
+keywords_sql_hash.c: keywords_sql.gperf
+	gperf -C -E -t -L C -N in_word_set_sql keywords_sql.gperf > keywords_sql_hash.c
+
+keywords_js_hash.c: keywords_sql.gperf
+	gperf -C -E -t -L C -N in_word_set_js keywords_js.gperf > keywords_js_hash.c
 
 OFILES=\
 	acme.$O\
@@ -63,13 +75,15 @@ OFILES=\
 	xfid.$O\
 	dat.$O\
 	tsyhl.$O\
+	colorschemes.$O\
+	linenr.$O\
 	keywords_c_hash.$O\
 	keywords_go_hash.$O\
 	keywords_python_hash.$O\
 	keywords_java_hash.$O\
 	keywords_codetags_hash.$O\
-	colorschemes.$O\
-	linenr.$O\
+	keywords_sql_hash.$O\
+	keywords_js_hash.$O\
 
 HFILES=dat.h\
 	edit.h\
@@ -83,6 +97,8 @@ HFILES=dat.h\
 	keywords_go.h\
 	keywords_python.h\
 	keywords_java.h\
+	keywords_sql.h\
+	keywords_js.h\
 
 <$PLAN9/src/mkone
 <$PLAN9/src/mkdirs

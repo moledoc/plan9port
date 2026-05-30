@@ -34,14 +34,29 @@ int file_ext(Rune *rp, int nc) {
 	ext_str += 1; // NOTE: step over '.'
 
 	int ext = EXT_NONE;
-	if (strcmp(ext_str, "c") == 0 || strcmp(ext_str, "h") == 0 || strcmp(ext_str, "cpp") == 0) {
+	if (strcmp(ext_str, "c") == 0 ||
+			strcmp(ext_str, "h") == 0 ||
+			strcmp(ext_str, "cpp") == 0 ||
+			strcmp(ext_str, "cc") == 0 ||
+			strcmp(ext_str, "cxx") == 0 ||
+			strcmp(ext_str, "hpp") == 0) {
 		ext = EXT_C;
 	} else if (strcmp(ext_str, "go") == 0) {
 		ext = EXT_GO;
-	} else if (strcmp(ext_str, "py") == 0) {
+	} else if (strcmp(ext_str, "py") == 0 || 
+				strcmp(ext_str, "pyi") == 0) {
 		ext = EXT_PYTHON;
 	} else if (strcmp(ext_str, "java") == 0) {		
 		ext = EXT_JAVA;
+	} else if (strcmp(ext_str, "sql") == 0) {		
+		ext = EXT_SQL;
+	} else if (strcmp(ext_str, "js") == 0 ||
+				strcmp(ext_str, "ts") == 0 ||
+				strcmp(ext_str, "mjs") == 0 ||
+				strcmp(ext_str, "mts") == 0 ||
+				strcmp(ext_str, "jsx") == 0 ||
+				strcmp(ext_str, "tsx") == 0) {		
+		ext = EXT_JS;
 	}
 	return ext;
 }
