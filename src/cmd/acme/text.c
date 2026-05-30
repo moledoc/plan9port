@@ -791,13 +791,14 @@ texttype(Text *t, Rune r)
 		typecommit(t);
 		pt = frptofchar(&t->fr, t->fr.p0);
 		pt.y += t->fr.font->height;
+		if (t->fr.r.max.y < pt.y) return; // NOTE: out of frame
 		diff = frcharofpt(&t->fr, pt) - t->fr.p0;
 		tq0 = t->q0+diff;
-		if(tq0 >= t->org+t->fr.nchars) { // NOTE: out of frame, move frame one line
+		if(t->org+t->fr.nchars <= tq0 && tq0 < t->file->b.nc) { // NOTE: out of frame, move frame one line
 			n = 1;
 			arrow_up_down_out_of_frame = 1;
 			goto case_Down;
-		} else if(tq0 < t->file->b.nc) {
+		} else if(tq0 <= t->file->b.nc) {
 			textshow(t, tq0, tq0, TRUE);
 		}
 		return;
@@ -831,13 +832,14 @@ texttype(Text *t, Rune r)
 		typecommit(t);
 		pt = frptofchar(&t->fr, t->fr.p0);
 		pt.y -= t->fr.font->height;
+		if (pt.y < 0) return; // NOTE: out of frame
 		diff = t->fr.p0 - frcharofpt(&t->fr, pt);
 		tq0 = t->q0-diff;
-		if(tq0 <= t->org) { // NOTE: out of frame, move frame one line
+		if(0 < tq0 && tq0 <= t->org) { // NOTE: out of frame, move frame one line
 			n = 1;
 			arrow_up_down_out_of_frame = 1;
 			goto case_Up;
-		} else if(tq0 > 0) {
+		} else if(0 <= tq0) {
 			textshow(t, tq0, tq0, TRUE);
 		}
 		return;
